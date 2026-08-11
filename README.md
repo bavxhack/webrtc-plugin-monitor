@@ -96,3 +96,9 @@ Der gleiche Build kann lokal mit `npm run package` erzeugt werden. Die Ausgabe l
 ### Fehler „Manifestdatei fehlt oder ist nicht lesbar“
 
 Chrome kann keine GitHub-Artifact-ZIP und keine Release-ZIP direkt als entpackte Erweiterung laden. Entpacke den Download zuerst und wähle anschließend den Ordner, der `manifest.json` unmittelbar enthält. Der Workflow legt `manifest.json` jetzt an die Wurzel des Workflow-Artefakts; ein zweites inneres ZIP ist dort nicht mehr enthalten. Bereits vor dieser Korrektur erzeugte Workflow-Läufe behalten ihr altes, doppelt gepacktes Format und sollten nicht mehr verwendet werden. Starte stattdessen einen neuen Lauf oder lade ein Artefakt eines neueren Commits herunter.
+
+## Erste Anzeige und integrierte Testseite
+
+Nach der Installation müssen bereits geöffnete Webseiten einmal neu geladen werden, weil Chrome neu installierte Content Scripts nicht rückwirkend in vorhandene Dokumente einfügt. Öffne danach das Popup auf einer Seite, die WebRTC verwendet. Eine Peer Connection ohne Tracks erscheint als eine Verbindung mit null Audio- und Videokanälen.
+
+Zum Funktionstest ohne externe Webseite im Popup **Testseite öffnen** wählen. Auf der Testseite kann eine Peer Connection ohne Tracks sowie lokales Audio oder Video erzeugt und wieder geschlossen werden. Es werden keine Kamera- oder Mikrofonberechtigungen angefordert. Nach einem Klick auf eine Testaktion das Erweiterungs-Popup erneut öffnen; Zähler und Badge sollten den neuen Zustand anzeigen.

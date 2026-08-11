@@ -23,7 +23,14 @@ async function refresh() {
 chrome.runtime.onMessage.addListener(message => {
   if (message && message.namespace === "webrtc-live-monitor" && message.type === "TAB_UPDATE" && message.tabId === activeTabId) render(message.counts);
 });
+byId("demo").addEventListener("click", async () => {
+  await chrome.tabs.create({ url: chrome.runtime.getURL("demo.html") });
+  window.close();
+});
 byId("reset").addEventListener("click", async () => {
   if (Number.isInteger(activeTabId)) await chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "RESET_TAB", tabId: activeTabId });
 });
-refresh();
+refresh().catch(error => {
+  byId("status").textContent = "Monitor konnte nicht geladen werden";
+  byId("help").textContent = error.message;
+});

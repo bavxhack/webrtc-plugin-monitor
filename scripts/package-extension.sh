@@ -10,7 +10,8 @@ rm -rf "${stage_dir}" "${archive}" "${archive}.sha256"
 mkdir -p "${stage_dir}/src"
 
 cp "${root_dir}/manifest.json" "${root_dir}/popup.html" \
-  "${root_dir}/popup.js" "${root_dir}/popup.css" "${stage_dir}/"
+  "${root_dir}/popup.js" "${root_dir}/popup.css" \
+  "${root_dir}/demo.html" "${root_dir}/demo.js" "${root_dir}/demo.css" "${stage_dir}/"
 cp "${root_dir}/src/"*.js "${stage_dir}/src/"
 
 (
