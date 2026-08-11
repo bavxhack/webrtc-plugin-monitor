@@ -9,7 +9,7 @@ for (const entry of manifest.content_scripts) {
   assert.equal(entry.run_at, "document_start");
   assert.equal(entry.all_frames, true);
 }
-for (const file of ["src/counting.js", "src/icon.js", "src/peer-counting.js", "src/main-world.js", "src/content-bridge.js", "src/service-worker.js", "popup.js", "demo.js"]) {
+for (const file of ["src/counting.js", "src/icon.js", "src/peer-counting.js", "src/internals-counting.js", "src/main-world.js", "src/content-bridge.js", "src/service-worker.js", "popup.js", "demo.js"]) {
   new vm.Script(fs.readFileSync(file, "utf8"), { filename: file });
 }
 assert.equal(manifest.icons, undefined);
