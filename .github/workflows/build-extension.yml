@@ -45,13 +45,14 @@ jobs:
       - name: Inspect package contents
         run: unzip -l dist/webrtc-live-monitor.zip
 
-      - name: Upload workflow artifact
+      - name: Verify unpacked extension root
+        run: test -r dist/webrtc-live-monitor/manifest.json
+
+      - name: Upload directly installable extension folder
         uses: actions/upload-artifact@v4
         with:
           name: webrtc-live-monitor-${{ github.sha }}
-          path: |
-            dist/webrtc-live-monitor.zip
-            dist/webrtc-live-monitor.zip.sha256
+          path: dist/webrtc-live-monitor/
           if-no-files-found: error
           retention-days: 30
 
@@ -65,11 +66,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Download packaged extension
-        uses: actions/download-artifact@v4
-        with:
-          name: webrtc-live-monitor-${{ github.sha }}
-          path: dist
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build release ZIP
+        run: bash scripts/package-extension.sh
 
       - name: Publish tagged GitHub release
         env:

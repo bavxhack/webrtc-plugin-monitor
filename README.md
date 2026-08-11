@@ -77,9 +77,9 @@ Der Workflow `.github/workflows/build-extension.yml` testet und paketiert die Er
 1. Auf GitHub den Tab **Actions** öffnen und **Build Chrome extension** auswählen.
 2. Einen erfolgreichen Lauf öffnen.
 3. Unter **Artifacts** das Archiv `webrtc-live-monitor-<commit>` herunterladen.
-4. Das heruntergeladene Workflow-Artifact entpacken; darin befinden sich `webrtc-live-monitor.zip` und die SHA-256-Prüfsumme.
-5. `webrtc-live-monitor.zip` ebenfalls entpacken.
-6. In Chrome `chrome://extensions` öffnen, den Entwicklermodus aktivieren, **Entpackte Erweiterung laden** wählen und den zuletzt entpackten Ordner auswählen.
+4. Das heruntergeladene Workflow-Artifact **einmal** entpacken. Im entpackten Ordner muss `manifest.json` direkt sichtbar sein.
+5. In Chrome `chrome://extensions` öffnen, den Entwicklermodus aktivieren und **Entpackte Erweiterung laden** wählen.
+6. Genau den Ordner auswählen, in dem `manifest.json` liegt — nicht den Download-Ordner darüber.
 
 Für einen dauerhaft öffentlich herunterladbaren Release muss die Version in `manifest.json` beispielsweise `1.1.0` lauten und ein passender Tag gepusht werden:
 
@@ -88,6 +88,11 @@ git tag v1.1.0
 git push origin v1.1.0
 ```
 
-Bei einem `v*`-Tag prüft der Workflow, dass Tag und Manifestversion übereinstimmen, und legt anschließend automatisch einen GitHub Release mit ZIP und SHA-256-Datei an. Normale Workflow-Artefakte bleiben 30 Tage verfügbar. Das Paket enthält ausschließlich die zum Laden der Erweiterung erforderlichen Manifest-, Popup- und `src`-Dateien; Tests, Harness, Repository-Metadaten und Dokumentation werden nicht in die installierbare ZIP aufgenommen.
+Bei einem `v*`-Tag prüft der Workflow, dass Tag und Manifestversion übereinstimmen, und legt anschließend automatisch einen GitHub Release mit ZIP und SHA-256-Datei an. Die ZIP eines Releases muss vor dem Laden in Chrome ebenfalls entpackt werden. Normale Workflow-Artefakte bleiben 30 Tage verfügbar. Das Paket enthält ausschließlich die zum Laden der Erweiterung erforderlichen Manifest-, Popup- und `src`-Dateien; Tests, Harness, Repository-Metadaten und Dokumentation werden nicht in die installierbare ZIP aufgenommen.
 
 Der gleiche Build kann lokal mit `npm run package` erzeugt werden. Die Ausgabe liegt danach unter `dist/webrtc-live-monitor.zip`.
+
+
+### Fehler „Manifestdatei fehlt oder ist nicht lesbar“
+
+Chrome kann keine GitHub-Artifact-ZIP und keine Release-ZIP direkt als entpackte Erweiterung laden. Entpacke den Download zuerst und wähle anschließend den Ordner, der `manifest.json` unmittelbar enthält. Der Workflow legt `manifest.json` jetzt an die Wurzel des Workflow-Artefakts; ein zweites inneres ZIP ist dort nicht mehr enthalten. Bereits vor dieser Korrektur erzeugte Workflow-Läufe behalten ihr altes, doppelt gepacktes Format und sollten nicht mehr verwendet werden. Starte stattdessen einen neuen Lauf oder lade ein Artefakt eines neueren Commits herunter.
