@@ -69,3 +69,25 @@ Dann `http://localhost:8000/test-harness/` öffnen. Die Schaltflächen decken ab
 - Eine Seite kann den Konstruktor nach der Installation selbst ersetzen oder die Nachrichtenbrücke imitieren.
 - Das Zurücksetzen löscht den aktuellen Tab-Zustand; solange WebRTC weiterläuft, stellt die periodische Synchronisierung ihn erwartungsgemäß wieder her.
 - Das MVP zeigt absichtlich keine Bitrate, Codecs, Paketverlust-, SDP-, ICE- oder IP-Daten.
+
+## Automatischer GitHub-Build und Download
+
+Der Workflow `.github/workflows/build-extension.yml` testet und paketiert die Erweiterung bei jedem Push, Pull Request und manuellen Start:
+
+1. Auf GitHub den Tab **Actions** öffnen und **Build Chrome extension** auswählen.
+2. Einen erfolgreichen Lauf öffnen.
+3. Unter **Artifacts** das Archiv `webrtc-live-monitor-<commit>` herunterladen.
+4. Das heruntergeladene Workflow-Artifact entpacken; darin befinden sich `webrtc-live-monitor.zip` und die SHA-256-Prüfsumme.
+5. `webrtc-live-monitor.zip` ebenfalls entpacken.
+6. In Chrome `chrome://extensions` öffnen, den Entwicklermodus aktivieren, **Entpackte Erweiterung laden** wählen und den zuletzt entpackten Ordner auswählen.
+
+Für einen dauerhaft öffentlich herunterladbaren Release muss die Version in `manifest.json` beispielsweise `1.1.0` lauten und ein passender Tag gepusht werden:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+Bei einem `v*`-Tag prüft der Workflow, dass Tag und Manifestversion übereinstimmen, und legt anschließend automatisch einen GitHub Release mit ZIP und SHA-256-Datei an. Normale Workflow-Artefakte bleiben 30 Tage verfügbar. Das Paket enthält ausschließlich die zum Laden der Erweiterung erforderlichen Manifest-, Popup- und `src`-Dateien; Tests, Harness, Repository-Metadaten und Dokumentation werden nicht in die installierbare ZIP aufgenommen.
+
+Der gleiche Build kann lokal mit `npm run package` erzeugt werden. Die Ausgabe liegt danach unter `dist/webrtc-live-monitor.zip`.
