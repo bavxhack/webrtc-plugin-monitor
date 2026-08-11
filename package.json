@@ -1,0 +1,6 @@
+{
+  "name": "webrtc-live-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "test": "node --test", "check": "node tests/check-extension.js" }
+}
