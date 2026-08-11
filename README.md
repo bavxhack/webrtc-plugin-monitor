@@ -102,3 +102,15 @@ Chrome kann keine GitHub-Artifact-ZIP und keine Release-ZIP direkt als entpackte
 Nach der Installation müssen bereits geöffnete Webseiten einmal neu geladen werden, weil Chrome neu installierte Content Scripts nicht rückwirkend in vorhandene Dokumente einfügt. Öffne danach das Popup auf einer Seite, die WebRTC verwendet. Eine Peer Connection ohne Tracks erscheint als eine Verbindung mit null Audio- und Videokanälen.
 
 Zum Funktionstest ohne externe Webseite im Popup **Testseite öffnen** wählen. Auf der Testseite kann eine Peer Connection ohne Tracks sowie lokales Audio oder Video erzeugt und wieder geschlossen werden. Es werden keine Kamera- oder Mikrofonberechtigungen angefordert. Nach einem Klick auf eine Testaktion das Erweiterungs-Popup erneut öffnen; Zähler und Badge sollten den neuen Zustand anzeigen.
+
+### Beim Klick erscheint kein Popup
+
+Das Puzzleteil-Symbol in der Chrome-Symbolleiste ist **das allgemeine Chrome-Menü für Erweiterungen**, nicht das Symbol von WebRTC Live Monitor. Nach dem Laden der Erweiterung:
+
+1. `chrome://extensions` öffnen und prüfen, dass **WebRTC Live Monitor** vorhanden und eingeschaltet ist.
+2. Auf der Erweiterungskarte **Neu laden** klicken, insbesondere nachdem ein neues GitHub-Artefakt entpackt wurde.
+3. In der Symbolleiste auf das Puzzleteil **Erweiterungen** klicken.
+4. Neben **WebRTC Live Monitor** die Stecknadel anklicken. Erst das danach dauerhaft sichtbare Monitor-Symbol öffnet das Popup.
+5. Eine normale Webseite öffnen und neu laden. Auf `chrome://`-Seiten, im Chrome Web Store und auf der Seite `chrome://extensions` darf Chrome die Seiteninstrumentierung nicht ausführen; das Popup selbst sollte sich trotzdem öffnen und null Werte anzeigen.
+
+Falls auch der Eintrag **WebRTC Live Monitor** im Erweiterungsmenü kein Popup öffnet, unter `chrome://extensions` auf der Erweiterungskarte nach einem roten Button **Fehler** suchen. Vor dem erneuten Laden muss das heruntergeladene Artefakt entpackt sein und die ausgewählte Verzeichniswurzel unmittelbar `manifest.json`, `popup.html`, `popup.js` und `popup.css` enthalten. Alte Workflow-Artefakte nicht wiederverwenden; jeder Workflow-Lauf enthält den Stand des jeweiligen Commits und wird später nicht aktualisiert.
