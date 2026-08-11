@@ -30,7 +30,7 @@ Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Si
 1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung, `addTrack`, `removeTrack`, `addTransceiver`, `replaceTrack`, `track`, `connectionstatechange`, Track-`ended` und `close`. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates.
 2. `src/content-bridge.js` läuft isoliert, validiert Struktur, Version, Herkunftsfenster, Wertebereiche und Summen der Page-World-Nachrichten und leitet nur Zähler weiter.
 3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
-4. Das Popup fragt ausschließlich den aktiven Tab ab, hört auf Live-Updates und kann dessen gespeicherten Zustand zurücksetzen. Das Action-Icon wird beim Start mit `OffscreenCanvas` erzeugt, sodass das Repository keine binären Bilddateien benötigt.
+4. Das Popup fragt ausschließlich den aktiven Tab ab, hört auf Live-Updates und kann dessen gespeicherten Zustand zurücksetzen. Das Action-Icon wird beim Start aus JavaScript erzeugt; die optionale Erzeugung kann einen Service-Worker- oder Popup-Start niemals verhindern und hält das Repository frei von Binärdateien.
 
 `<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
 
@@ -52,7 +52,7 @@ npm test
 npm run check
 ```
 
-Die Node-Tests prüfen leere Zustände, Normalisierung, Summenbildung über mehrere Frames und getrennte Tabs. Der Check parst Manifest und JavaScript, prüft die minimal erwarteten Berechtigungen, `document_start`, alle Frames und die quelltextbasierte Icon-Erzeugung.
+Die Node-Tests prüfen leere Zustände, Normalisierung, Summenbildung über mehrere Frames und getrennte Tabs. Der Check parst Manifest und JavaScript, prüft die minimal erwarteten Berechtigungen, `document_start`, alle Frames sowie die Laufzeit-Icon-Erzeugung und stellt sicher, dass keine Binärdateien eingecheckt sind.
 
 ### Lokales Browser-Harness
 
@@ -123,4 +123,4 @@ Beim Neuladen einer Erweiterung invalidiert Chrome deren bereits in offenen Tabs
 
 ### Mehrere entpackte Versionen unterscheiden
 
-Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Symbol neu an. Das Popup zeigt die installierte Manifestversion am unteren Rand an. Die dynamische Icon-Erzeugung ist optional abgesichert: Selbst wenn `OffscreenCanvas` in einer Browserumgebung nicht verfügbar ist, startet der Service Worker weiter und Chrome verwendet sein Standardsymbol.
+Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Symbol neu an. Das Popup zeigt die installierte Manifestversion am unteren Rand an. Das grün-blaue Monitor-Symbol wird beim Start aus JavaScript erzeugt; falls die Browserumgebung diese optionale Erzeugung nicht unterstützt, bleibt die Popup-Action trotzdem mit Chromes Standardsymbol bedienbar.
