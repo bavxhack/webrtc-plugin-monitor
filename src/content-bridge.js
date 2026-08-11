@@ -7,7 +7,13 @@
       c[kind].total === c[kind].inbound + c[kind].outbound);
   }
   function send(type, counts) {
-    chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", version: 1, type, counts }).catch(() => {});
+    try {
+      const pending = chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", version: 1, type, counts });
+      if (pending && typeof pending.catch === "function") pending.catch(() => {});
+    } catch {
+      // Reloading or updating an extension invalidates content scripts in already
+      // open documents. Chrome throws synchronously until that page is reloaded.
+    }
   }
   window.addEventListener("message", event => {
     if (event.source !== window || !event.data || event.data.source !== "webrtc-live-monitor" || event.data.version !== 1) return;
