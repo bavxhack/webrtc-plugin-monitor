@@ -15,5 +15,7 @@ for (const file of ["src/counting.js", "src/icon.js", "src/peer-counting.js", "s
 assert.equal(manifest.icons, undefined);
 assert.equal(manifest.action.default_icon, undefined);
 assert(!fs.existsSync("icons"), "repository must not contain binary icon assets");
-assert.match(fs.readFileSync("src/service-worker.js", "utf8"), /chrome\.action\.setIcon/);
+const workerSource = fs.readFileSync("src/service-worker.js", "utf8");
+assert.match(workerSource, /chrome\.action\.setIcon/);
+assert.match(workerSource, /The generated icon is optional/);
 console.log("Manifest, JavaScript syntax, permissions and generated action icon are valid.");

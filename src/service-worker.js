@@ -1,6 +1,12 @@
 "use strict";
 importScripts("counting.js", "icon.js");
-chrome.action.setIcon({ imageData: WebRTCMonitorIcon.createActionIcons() }).catch(() => {});
+try {
+  const iconUpdate = chrome.action.setIcon({ imageData: WebRTCMonitorIcon.createActionIcons() });
+  if (iconUpdate && typeof iconUpdate.catch === "function") iconUpdate.catch(() => {});
+} catch {
+  // The generated icon is optional. Unsupported canvas APIs must never prevent
+  // the service worker, popup messaging, or WebRTC monitoring from starting.
+}
 const STORAGE_KEY = "tabFrames";
 let statePromise = chrome.storage.session.get(STORAGE_KEY).then(data => data[STORAGE_KEY] || {});
 const save = state => chrome.storage.session.set({ [STORAGE_KEY]: state });

@@ -1,6 +1,7 @@
 "use strict";
 let activeTabId;
 const byId = id => document.getElementById(id);
+byId("version").textContent = chrome.runtime.getManifest().version;
 function render(c) {
   byId("peers").textContent = c.peers;
   for (const kind of ["audio", "video"]) {

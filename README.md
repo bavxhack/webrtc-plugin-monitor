@@ -118,3 +118,7 @@ Falls auch der Eintrag **WebRTC Live Monitor** im Erweiterungsmenü kein Popup �
 ### Meldung „Extension context invalidated“ nach „Neu laden“
 
 Beim Neuladen einer Erweiterung invalidiert Chrome deren bereits in offenen Tabs laufende isolierte Content Scripts. Die aktuelle Bridge fängt sowohl synchrone Ausnahmen als auch abgelehnte Messaging-Promises ab, sodass daraus kein dauerhafter Erweiterungsfehler mehr entsteht. Trotzdem muss der betroffene Webseiten-Tab nach jedem Klick auf **Neu laden** ebenfalls einmal vollständig neu geladen werden: Nur dadurch werden die Content Scripts aus der aktualisierten Erweiterung neu eingebunden. Die Meldung aus einem bereits alten Kontext kann in `chrome://extensions` noch in der bisherigen Fehlerhistorie stehen; nach **Alle löschen** und einem Seiten-Reload sollte sie nicht erneut auftreten.
+
+### Mehrere entpackte Versionen unterscheiden
+
+Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Symbol neu an. Das Popup zeigt die installierte Manifestversion am unteren Rand an. Die dynamische Icon-Erzeugung ist optional abgesichert: Selbst wenn `OffscreenCanvas` in einer Browserumgebung nicht verfügbar ist, startet der Service Worker weiter und Chrome verwendet sein Standardsymbol.
