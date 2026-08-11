@@ -1,0 +1,85 @@
+name: Build Chrome extension
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Test and package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Validate extension
+        run: npm run check
+
+      - name: Verify release tag matches manifest version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          manifest_version="$(node -p "require('./manifest.json').version")"
+          test "${GITHUB_REF_NAME}" = "v${manifest_version}" || {
+            echo "Tag ${GITHUB_REF_NAME} does not match manifest version v${manifest_version}." >&2
+            exit 1
+          }
+
+      - name: Build installable ZIP
+        run: npm run package
+
+      - name: Inspect package contents
+        run: unzip -l dist/webrtc-live-monitor.zip
+
+      - name: Verify unpacked extension root
+        run: test -r dist/webrtc-live-monitor/manifest.json
+
+      - name: Upload directly installable extension folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: webrtc-live-monitor-${{ github.sha }}
+          path: dist/webrtc-live-monitor/
+          if-no-files-found: error
+          retention-days: 30
+
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build release ZIP
+        run: bash scripts/package-extension.sh
+
+      - name: Publish tagged GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          dist/webrtc-live-monitor.zip
+          dist/webrtc-live-monitor.zip.sha256
+          --repo "${GITHUB_REPOSITORY}"
+          --title "WebRTC Live Monitor ${GITHUB_REF_NAME}"
+          --generate-notes
+          --verify-tag

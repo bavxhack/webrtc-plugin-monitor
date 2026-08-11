@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WebRTC Live Monitor – Testseite</title>
+  <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+  <main>
+    <h1>WebRTC-Testseite</h1>
+    <p>Erzeuge lokale Peer Connections und Tracks, um Popup und Badge ohne Kamera, Mikrofon oder externe Dienste zu testen.</p>
+    <div class="actions">
+      <button id="empty" type="button">Verbindung ohne Tracks</button>
+      <button id="audio" type="button">Audio hinzufügen</button>
+      <button id="video" type="button">Video hinzufügen</button>
+      <button id="close" type="button">Alle schließen</button>
+    </div>
+    <output id="result">Noch keine Testverbindung erstellt.</output>
+    <p class="hint">Öffne nach einer Aktion das Erweiterungs-Popup erneut. Die Zähler und das Badge werden automatisch aktualisiert.</p>
+  </main>
+  <script src="src/peer-counting.js"></script>
+  <script src="src/content-bridge.js"></script>
+  <script src="src/main-world.js"></script>
+  <script src="demo.js"></script>
+</body>
+</html>
