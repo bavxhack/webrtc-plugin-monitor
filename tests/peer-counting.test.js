@@ -2,7 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { countPeerConnections } = require("../src/peer-counting.js");
 const track = (kind, readyState = "live") => ({ kind, readyState });
-const peer = ({ state = "new", senders = [], receivers = [] } = {}) => ({ connectionState: state, getSenders: () => senders, getReceivers: () => receivers });
+const peer = ({ state = "new", senders = [], receivers = [], transceivers } = {}) => {
+  const connection = { connectionState: state, getSenders: () => senders, getReceivers: () => receivers };
+  if (transceivers) connection.getTransceivers = () => transceivers;
+  return connection;
+};
 
 test("open peer without tracks is retained", () => assert.equal(countPeerConnections([peer()]).peers, 1));
 test("outbound audio and audio/video are classified", () => {
@@ -27,4 +31,32 @@ test("ended, removed, null and closed tracks are excluded", () => {
   const ended = track("audio", "ended");
   const result = countPeerConnections([peer({ senders: [{ track: ended }, { track: null }] }), peer({ state: "closed", senders: [{ track: track("video") }] })]);
   assert.deepEqual(result, { peers: 1, audio: { inbound: 0, outbound: 0, total: 0 }, video: { inbound: 0, outbound: 0, total: 0 } });
+});
+
+
+test("unnegotiated and non-receiving transceivers are not inbound channels", () => {
+  const audioReceiver = { track: track("audio") };
+  const videoReceiver = { track: track("video") };
+  const result = countPeerConnections([peer({
+    receivers: [audioReceiver, videoReceiver],
+    transceivers: [
+      { receiver: audioReceiver, currentDirection: null, stopped: false },
+      { receiver: videoReceiver, currentDirection: "sendonly", stopped: false }
+    ]
+  })]);
+  assert.equal(result.audio.inbound, 0);
+  assert.equal(result.video.inbound, 0);
+});
+
+test("only negotiated receiving transceivers count inbound tracks", () => {
+  const audioReceiver = { track: track("audio") };
+  const videoReceiver = { track: track("video") };
+  const stoppedReceiver = { track: track("video") };
+  const result = countPeerConnections([peer({ transceivers: [
+    { receiver: audioReceiver, currentDirection: "recvonly", stopped: false },
+    { receiver: videoReceiver, currentDirection: "sendrecv", stopped: false },
+    { receiver: stoppedReceiver, currentDirection: "recvonly", stopped: true }
+  ] })]);
+  assert.equal(result.audio.inbound, 1);
+  assert.equal(result.video.inbound, 1);
 });

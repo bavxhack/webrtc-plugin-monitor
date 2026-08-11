@@ -16,12 +16,14 @@ Die Mindestversion ist Chrome 111. Der Grund ist die deklarative Ausführung ein
 Berücksichtigt werden ausschließlich Peer Connections mit `connectionState !== "closed"`:
 
 - **Ausgehendes Audio/Video:** ein Audio-/Video-Track eines `RTCRtpSender`, dessen `readyState` nicht `ended` ist.
-- **Eingehendes Audio/Video:** ein Audio-/Video-Track eines `RTCRtpReceiver`, dessen `readyState` nicht `ended` ist.
+- **Eingehendes Audio/Video:** ein Audio-/Video-Track eines `RTCRtpReceiver`, dessen `readyState` nicht `ended` ist und dessen nicht gestoppter Transceiver mit `currentDirection` tatsächlich für Empfang ausgehandelt ist (`recvonly` oder `sendrecv`). Auf älteren Implementierungen ohne `getTransceivers()` wird auf die Receiver-Liste zurückgefallen.
 - Derselbe Track wird innerhalb einer Peer Connection und Richtung anhand seiner Objektidentität nur einmal gezählt.
 - **Gesamt** ist jeweils eingehend plus ausgehend. Das Badge ist Audio gesamt plus Video gesamt.
 - Eine offene Peer Connection ohne Tracks wird als eine Verbindung und null Medienkanäle angezeigt.
 
-Ein Browser kann einem Receiver bereits vor tatsächlich fließenden RTP-Medien einen nicht beendeten Track zuordnen. Ohne Statistiken auszulesen lässt sich „vorhanden“ nicht zuverlässig von „empfängt gerade Daten“ unterscheiden. Dieses MVP folgt daher bewusst der obigen Track-Definition und behauptet keine Aktivität auf Paketebene.
+Ein Browser kann einem Receiver bereits vor tatsächlich fließenden RTP-Medien einen nicht beendeten Track zuordnen. Nicht ausgehandelte, nur sendende oder gestoppte Transceiver werden deshalb nicht mehr als eingehend gezählt. Auch bei einem ausgehandelten Empfang lässt sich ohne Statistiken weiterhin nicht zuverlässig feststellen, ob gerade RTP-Pakete fließen; das MVP behauptet keine Aktivität auf Paketebene.
+
+Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Simulcast kann einen einzigen ausgehenden Video-Track über beispielsweise drei RTP-Encoding-Layer senden. `chrome://webrtc-internals` kann dafür drei ausgehende RTP-Streams anzeigen, während WebRTC Live Monitor gemäß der MVP-Kanaldefinition korrekt einen ausgehenden Videokanal zählt. Mehrere unterschiedliche Sender-Tracks werden dagegen einzeln gezählt. RTP-Encoding-, SSRC- oder Statistikzählung gehört nicht zu diesem ersten Meilenstein.
 
 ## Architektur
 

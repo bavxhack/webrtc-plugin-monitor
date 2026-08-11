@@ -6,11 +6,18 @@
       if (pc.connectionState === "closed") continue;
       counts.peers++;
       count(pc.getSenders(), "outbound", counts, identity);
-      count(pc.getReceivers(), "inbound", counts, identity);
+      count(receivingRtpObjects(pc), "inbound", counts, identity);
     }
     counts.audio.total = counts.audio.inbound + counts.audio.outbound;
     counts.video.total = counts.video.inbound + counts.video.outbound;
     return counts;
+  }
+  function receivingRtpObjects(pc) {
+    if (typeof pc.getTransceivers !== "function") return pc.getReceivers();
+    return pc.getTransceivers()
+      .filter(transceiver => transceiver && !transceiver.stopped &&
+        (transceiver.currentDirection === "recvonly" || transceiver.currentDirection === "sendrecv"))
+      .map(transceiver => transceiver.receiver);
   }
   function count(items, direction, counts, identity) {
     const seen = new Set();
