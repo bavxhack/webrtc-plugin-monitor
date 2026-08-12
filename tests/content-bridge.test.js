@@ -33,7 +33,7 @@ test("valid page counts are forwarded after FRAME_READY", () => {
       source: "webrtc-live-monitor",
       version: 1,
       type: "COUNTS",
-      counts: { peers: 1, audio: { inbound: 0, outbound: 1, total: 1, inboundBitrate: 0, outboundBitrate: 0 }, video: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 } }
+      counts: { peers: 1, audio: { inbound: 0, outbound: 1, total: 1, inboundBitrate: 0, outboundBitrate: 0 }, video: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 }, screenShare: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 } }
     }
   });
   assert.deepEqual(messages.map(message => message.type), ["FRAME_READY", "FRAME_COUNTS"]);

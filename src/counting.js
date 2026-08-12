@@ -1,9 +1,10 @@
 (function (root) {
   "use strict";
-  const KINDS = ["audio", "video"];
+  const KINDS = ["audio", "video", "screenShare"];
+  const emptyMediaCounts = () => ({ inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 });
 
   function emptyCounts() {
-    return { peers: 0, audio: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 }, video: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 } };
+    return { peers: 0, audio: emptyMediaCounts(), video: emptyMediaCounts(), screenShare: emptyMediaCounts() };
   }
 
   function normalizeCounts(value) {
