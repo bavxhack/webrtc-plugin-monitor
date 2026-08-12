@@ -22,4 +22,9 @@ assert.deepEqual(repositoryFiles.filter(file => binaryExtensions.has(require("no
 const workerSource = fs.readFileSync("src/service-worker.js", "utf8");
 assert.doesNotMatch(workerSource, /setIcon|OffscreenCanvas|icon\.js/);
 assert.match(workerSource, /WebRTCMonitorActionController\.install/);
+const workflowSource = fs.readFileSync(".github/workflows/build-extension.yml", "utf8");
+assert.match(workflowSource, /github\.ref == 'refs\/heads\/main'/);
+assert.match(workflowSource, /packages: write/);
+assert.match(workflowSource, /oras push "\$\{package\}:main"/);
+assert.match(workflowSource, /oras tag "\$\{package\}:main" "run-\$\{GITHUB_RUN_NUMBER\}"/);
 console.log("Manifest, explicit toolbar click controller, JavaScript syntax, permissions and binary-free assets are valid.");
