@@ -59,49 +59,43 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload package payload
+      - name: Upload release payload
         uses: actions/upload-artifact@v4
         with:
-          name: webrtc-live-monitor-package-${{ github.run_number }}
+          name: webrtc-live-monitor-release-${{ github.run_number }}
           path: |
             dist/webrtc-live-monitor.zip
             dist/webrtc-live-monitor.zip.sha256
           if-no-files-found: error
           retention-days: 1
 
-  package:
-    name: Publish main package
+  main-release:
+    name: Publish main release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
+      contents: write
 
     steps:
-      - name: Download package payload
+      - name: Download release payload
         uses: actions/download-artifact@v4
         with:
-          name: webrtc-live-monitor-package-${{ github.run_number }}
+          name: webrtc-live-monitor-release-${{ github.run_number }}
           path: dist
 
-      - name: Set up ORAS
-        uses: oras-project/setup-oras@v1
-
-      - name: Publish extension to GitHub Packages
-        shell: bash
+      - name: Publish main GitHub release
         env:
-          GHCR_TOKEN: ${{ github.token }}
-        run: |
-          package="ghcr.io/${GITHUB_REPOSITORY,,}"
-          printf '%s' "${GHCR_TOKEN}" | oras login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
-          oras push "${package}:main" \
-            --artifact-type "application/vnd.google.chrome.extension.v1" \
-            --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-            --annotation "org.opencontainers.image.revision=${GITHUB_SHA}" \
-            "dist/webrtc-live-monitor.zip:application/zip" \
-            "dist/webrtc-live-monitor.zip.sha256:text/plain"
-          oras tag "${package}:main" "run-${GITHUB_RUN_NUMBER}"
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "main-${GITHUB_RUN_NUMBER}"
+          dist/webrtc-live-monitor.zip
+          dist/webrtc-live-monitor.zip.sha256
+          --repo "${GITHUB_REPOSITORY}"
+          --target "${GITHUB_SHA}"
+          --title "WebRTC Live Monitor main build ${GITHUB_RUN_NUMBER}"
+          --notes "Automatischer Build aus main (${GITHUB_SHA})."
+          --prerelease
 
 
   release:
