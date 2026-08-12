@@ -31,7 +31,7 @@ Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Si
 1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung und Änderungen der Peer Connections. `src/rtp-stats.js` liest regelmäßig deren `getStats()`-Reports aus, filtert tatsächlich übertragende RTP-Streams und berechnet die ein- und ausgehende Bitrate. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates.
 2. `src/content-bridge.js` läuft isoliert, validiert Struktur, Version, Herkunftsfenster, Wertebereiche und Summen der Page-World-Nachrichten und leitet nur Zähler weiter.
 3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
-4. Das Popup ist direkt über `action.default_popup` im Manifest registriert, fragt ausschließlich den aktiven Tab ab, hört auf Live-Updates und kann dessen gespeicherten Zustand zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
+4. Ein expliziter Action-Controller verarbeitet den Toolbar-Klick und öffnet `popup.html` in einem kleinen Popup-Fenster. Ein weiterer Klick fokussiert das bereits offene Fenster. Das Popup fragt den aktiven Tab ab, hört auf Live-Updates und kann dessen Zustand zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
 
 `<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
 
@@ -53,7 +53,7 @@ npm test
 npm run check
 ```
 
-Die Node-Tests prüfen leere Zustände, Normalisierung, Summenbildung über mehrere Frames und getrennte Tabs. Der Check parst Manifest und JavaScript, prüft die Popup-Registrierung, die minimal erwarteten Berechtigungen, `document_start`, alle Frames und stellt sicher, dass weder Binärdateien noch eigene Icons konfiguriert sind.
+Die Node-Tests prüfen leere Zustände, Normalisierung, Summenbildung über mehrere Frames und getrennte Tabs. Der Check parst Manifest und JavaScript, prüft den expliziten Toolbar-Klick-Controller, die minimal erwarteten Berechtigungen, `document_start`, alle Frames und stellt sicher, dass weder Binärdateien noch eigene Icons konfiguriert sind.
 
 ### Lokales Browser-Harness
 

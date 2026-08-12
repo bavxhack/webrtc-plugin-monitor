@@ -21,8 +21,12 @@ function formatBitrate(bitsPerSecond) {
   return `${Math.round(bitsPerSecond / 1000)} kbit/s`;
 }
 async function refresh() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  activeTabId = tab && tab.id;
+  const requestedTabId = Number(new URLSearchParams(location.search).get("tabId"));
+  if (Number.isInteger(requestedTabId) && requestedTabId >= 0) activeTabId = requestedTabId;
+  else {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    activeTabId = tab?.id;
+  }
   if (!Number.isInteger(activeTabId)) return;
   const response = await chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "GET_TAB", tabId: activeTabId });
   render(response.counts);
