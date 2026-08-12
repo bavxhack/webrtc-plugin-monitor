@@ -8,17 +8,29 @@
   const peers = new Set();
   const previousStats = new WeakMap();
   const screenShareTracks = new WeakSet();
-  let scheduled = false;
+  let updatePending = false;
+  let measurementRunning = false;
 
   async function emit() {
-    scheduled = false;
-    const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats, screenShareTracks);
-    window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "COUNTS", counts }, "*");
+    if (measurementRunning) {
+      updatePending = true;
+      return;
+    }
+    measurementRunning = true;
+    updatePending = false;
+    try {
+      const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats, screenShareTracks);
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "COUNTS", counts }, "*");
+    } finally {
+      measurementRunning = false;
+      if (updatePending) queueMicrotask(emit);
+    }
   }
 
   function update() {
-    if (!scheduled) {
-      scheduled = true;
+    if (measurementRunning) updatePending = true;
+    else if (!updatePending) {
+      updatePending = true;
       queueMicrotask(emit);
     }
   }
@@ -91,7 +103,7 @@
     Object.defineProperty(window.RTCRtpSender.prototype, "replaceTrack", { configurable: true, writable: true, value: replaceTrack });
   }
 
-  window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "FRAME_GONE" }, "*"));
+  window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "FRAME_GONE" }, "*"));
   setInterval(update, 2500);
   update();
 })();

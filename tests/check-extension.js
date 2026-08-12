@@ -11,7 +11,7 @@ for (const entry of manifest.content_scripts) {
   assert.equal(entry.run_at, "document_start");
   assert.equal(entry.all_frames, true);
 }
-for (const file of ["src/counting.js", "src/action-controller.js", "src/peer-counting.js", "src/rtp-stats.js", "src/main-world.js", "src/content-bridge.js", "src/service-worker.js", "popup.js", "demo.js"]) {
+for (const file of ["src/counting.js", "src/action-controller.js", "src/rtp-stats.js", "src/main-world.js", "src/content-bridge.js", "src/service-worker.js", "scripts/set-build-version.js", "popup.js", "demo.js"]) {
   new vm.Script(fs.readFileSync(file, "utf8"), { filename: file });
 }
 assert.equal(manifest.icons, undefined);
@@ -22,4 +22,9 @@ assert.deepEqual(repositoryFiles.filter(file => binaryExtensions.has(require("no
 const workerSource = fs.readFileSync("src/service-worker.js", "utf8");
 assert.doesNotMatch(workerSource, /setIcon|OffscreenCanvas|icon\.js/);
 assert.match(workerSource, /WebRTCMonitorActionController\.install/);
+const workflowSource = fs.readFileSync(".github/workflows/build-extension.yml", "utf8");
+assert.match(workflowSource, /github\.ref == 'refs\/heads\/main'/);
+assert.match(workflowSource, /packages: write/);
+assert.match(workflowSource, /oras push "\$\{package\}:main"/);
+assert.match(workflowSource, /oras tag "\$\{package\}:main" "run-\$\{GITHUB_RUN_NUMBER\}"/);
 console.log("Manifest, explicit toolbar click controller, JavaScript syntax, permissions and binary-free assets are valid.");

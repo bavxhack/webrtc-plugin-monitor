@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Set extension build version
+        run: npm run build:version -- "${GITHUB_RUN_NUMBER}"
+
       - name: Run unit tests
         run: npm test
 
@@ -33,9 +36,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
-          manifest_version="$(node -p "require('./manifest.json').version")"
-          test "${GITHUB_REF_NAME}" = "v${manifest_version}" || {
-            echo "Tag ${GITHUB_REF_NAME} does not match manifest version v${manifest_version}." >&2
+          release_version="$(node -p "require('./package.json').version")"
+          test "${GITHUB_REF_NAME}" = "v${release_version}" || {
+            echo "Tag ${GITHUB_REF_NAME} does not match release version v${release_version}." >&2
             exit 1
           }
 
@@ -51,10 +54,54 @@ jobs:
       - name: Upload directly installable extension folder
         uses: actions/upload-artifact@v4
         with:
-          name: webrtc-live-monitor-${{ github.sha }}
+          name: webrtc-live-monitor-${{ github.run_number }}
           path: dist/webrtc-live-monitor/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload package payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: webrtc-live-monitor-package-${{ github.run_number }}
+          path: |
+            dist/webrtc-live-monitor.zip
+            dist/webrtc-live-monitor.zip.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  package:
+    name: Publish main package
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Download package payload
+        uses: actions/download-artifact@v4
+        with:
+          name: webrtc-live-monitor-package-${{ github.run_number }}
+          path: dist
+
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Publish extension to GitHub Packages
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          package="ghcr.io/${GITHUB_REPOSITORY,,}"
+          printf '%s' "${GHCR_TOKEN}" | oras login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          oras push "${package}:main" \
+            --artifact-type "application/vnd.google.chrome.extension.v1" \
+            --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --annotation "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            "dist/webrtc-live-monitor.zip:application/zip" \
+            "dist/webrtc-live-monitor.zip.sha256:text/plain"
+          oras tag "${package}:main" "run-${GITHUB_RUN_NUMBER}"
 
 
   release:
@@ -68,6 +115,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set extension build version
+        run: npm run build:version -- "${GITHUB_RUN_NUMBER}"
 
       - name: Build release ZIP
         run: bash scripts/package-extension.sh

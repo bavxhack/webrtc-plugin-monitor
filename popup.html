@@ -1,10 +1,67 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WebRTC Live Monitor</title><link rel="stylesheet" href="popup.css"></head><body>
-<main><header><div><h1>WebRTC Live Monitor</h1><p id="status" class="status">Wird geladen …</p></div><span id="pulse" aria-hidden="true"></span></header>
-<section class="card peers"><h2>Peer Connections</h2><strong id="peers">0</strong></section>
-<section class="card audio"><h2>Audio-Kanäle (Tracks)</h2><dl><div><dt>Eingehend</dt><dd><span id="audio-in">0</span> <small id="audio-in-bitrate">0 kbit/s</small></dd></div><div><dt>Ausgehend</dt><dd><span id="audio-out">0</span> <small id="audio-out-bitrate">0 kbit/s</small></dd></div><div class="total"><dt>Gesamt</dt><dd id="audio-total">0</dd></div></dl></section>
-<section class="card video"><h2>Kamera-Videos (Tracks)</h2><dl><div><dt>Eingehend</dt><dd><span id="video-in">0</span> <small id="video-in-bitrate">0 kbit/s</small></dd></div><div><dt>Ausgehend</dt><dd><span id="video-out">0</span> <small id="video-out-bitrate">0 kbit/s</small></dd></div><div class="total"><dt>Gesamt</dt><dd id="video-total">0</dd></div></dl></section>
-<section class="card screen-share"><h2>Bildschirmfreigaben (Tracks)</h2><dl><div><dt>Eingehend</dt><dd><span id="screenShare-in">0</span> <small id="screenShare-in-bitrate">0 kbit/s</small></dd></div><div><dt>Ausgehend</dt><dd><span id="screenShare-out">0</span> <small id="screenShare-out-bitrate">0 kbit/s</small></dd></div><div class="total"><dt>Gesamt</dt><dd id="screenShare-total">0</dd></div></dl></section>
-<p id="help" class="help">Nach der Installation vorhandene Webseiten einmal neu laden.</p>
-<button id="demo" class="demo" type="button">Testseite öffnen</button>
-<p class="version">Installierte Version: <span id="version">–</span></p>
-<footer><p>Letzte Aktualisierung: <time id="updated">–</time></p><button id="reset" type="button">Zurücksetzen</button></footer></main><script src="popup.js"></script></body></html>
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebRTC Live Monitor</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div class="brand" aria-label="WebRTC Live Monitor">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>WebRTC <strong>Monitor</strong></span>
+      </div>
+      <div class="hero-status">
+        <span id="pulse" class="idle" aria-hidden="true"></span>
+        <div>
+          <p class="eyebrow">Live-Status</p>
+          <h1 id="status">Wird geladen …</h1>
+        </div>
+      </div>
+    </header>
+
+    <section class="summary" aria-labelledby="connections-title">
+      <div>
+        <p class="eyebrow">Aktueller Tab</p>
+        <h2 id="connections-title">Peer Connections</h2>
+      </div>
+      <strong id="peers">0</strong>
+    </section>
+
+    <section class="panel connection-states" aria-labelledby="states-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Übersicht</p><h2 id="states-title">Verbindungsstatus</h2></div>
+      </div>
+      <ul>
+        <li class="state-new"><span>Vorbereitet</span><strong id="state-new">0</strong></li>
+        <li class="state-connecting"><span>Wird aufgebaut</span><strong id="state-connecting">0</strong></li>
+        <li class="state-connected"><span>Verbunden</span><strong id="state-connected">0</strong></li>
+        <li class="state-disconnected"><span>Unterbrochen</span><strong id="state-disconnected">0</strong></li>
+        <li class="state-failed"><span>Fehlgeschlagen</span><strong id="state-failed">0</strong></li>
+      </ul>
+    </section>
+
+    <section class="media-grid" aria-label="Medienkanäle">
+      <article class="panel media-card audio">
+        <div class="section-heading"><span class="media-symbol" aria-hidden="true">A</span><h2>Audio</h2></div>
+        <dl><div><dt>Eingehend</dt><dd><span id="audio-in">0</span><small id="audio-in-bitrate">0 kbit/s</small></dd></div><div><dt>Ausgehend</dt><dd><span id="audio-out">0</span><small id="audio-out-bitrate">0 kbit/s</small></dd></div><div class="total"><dt>Gesamt</dt><dd id="audio-total">0</dd></div></dl>
+      </article>
+      <article class="panel media-card video">
+        <div class="section-heading"><span class="media-symbol" aria-hidden="true">V</span><h2>Kamera-Video</h2></div>
+        <dl><div><dt>Eingehend</dt><dd><span id="video-in">0</span><small id="video-in-bitrate">0 kbit/s</small></dd></div><div><dt>Ausgehend</dt><dd><span id="video-out">0</span><small id="video-out-bitrate">0 kbit/s</small></dd></div><div class="total"><dt>Gesamt</dt><dd id="video-total">0</dd></div></dl>
+      </article>
+      <article class="panel media-card screen-share">
+        <div class="section-heading"><span class="media-symbol" aria-hidden="true">S</span><h2>Bildschirmfreigabe</h2></div>
+        <dl><div><dt>Eingehend</dt><dd><span id="screenShare-in">0</span><small id="screenShare-in-bitrate">0 kbit/s</small></dd></div><div><dt>Ausgehend</dt><dd><span id="screenShare-out">0</span><small id="screenShare-out-bitrate">0 kbit/s</small></dd></div><div class="total"><dt>Gesamt</dt><dd id="screenShare-total">0</dd></div></dl>
+      </article>
+    </section>
+
+    <p id="help" class="help">Nach der Installation vorhandene Webseiten einmal neu laden.</p>
+    <div class="actions"><button id="demo" class="primary" type="button">Testseite öffnen</button><button id="reset" class="secondary" type="button">Zurücksetzen</button></div>
+    <footer><span>Letzte Aktualisierung: <time id="updated">–</time></span><span>Version <span id="version">–</span></span></footer>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

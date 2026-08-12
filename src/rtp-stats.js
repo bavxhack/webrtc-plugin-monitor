@@ -2,17 +2,21 @@
   "use strict";
 
   const MEDIA_KINDS = ["audio", "video", "screenShare"];
+  const CONNECTION_STATES = ["new", "connecting", "connected", "disconnected", "failed"];
   const emptyMediaCounts = () => ({ inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 });
+  const emptyConnectionStates = () => Object.fromEntries(CONNECTION_STATES.map(state => [state, 0]));
 
   function emptyCounts() {
-    return { peers: 0, audio: emptyMediaCounts(), video: emptyMediaCounts(), screenShare: emptyMediaCounts() };
+    return { peers: 0, connectionStates: emptyConnectionStates(), audio: emptyMediaCounts(), video: emptyMediaCounts(), screenShare: emptyMediaCounts() };
   }
 
   async function countPeerConnections(peers, previous = new WeakMap(), screenShareTracks = new WeakSet()) {
     const counts = emptyCounts();
     await Promise.all(Array.from(peers, async pc => {
-      if (pc.connectionState === "closed") return;
+      const connectionState = pc.connectionState;
+      if (connectionState === "closed") return;
       counts.peers++;
+      if (CONNECTION_STATES.includes(connectionState)) counts.connectionStates[connectionState]++;
       let stats;
       try { stats = await pc.getStats(); } catch { return; }
       const prior = previous.get(pc) || new Map();
