@@ -7,17 +7,30 @@
   if (typeof NativePC !== "function") return;
   const peers = new Set();
   const previousStats = new WeakMap();
-  let scheduled = false;
+  const screenShareTracks = new WeakSet();
+  let updatePending = false;
+  let measurementRunning = false;
 
   async function emit() {
-    scheduled = false;
-    const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats);
-    window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "COUNTS", counts }, "*");
+    if (measurementRunning) {
+      updatePending = true;
+      return;
+    }
+    measurementRunning = true;
+    updatePending = false;
+    try {
+      const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats, screenShareTracks);
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "COUNTS", counts }, "*");
+    } finally {
+      measurementRunning = false;
+      if (updatePending) queueMicrotask(emit);
+    }
   }
 
   function update() {
-    if (!scheduled) {
-      scheduled = true;
+    if (measurementRunning) updatePending = true;
+    else if (!updatePending) {
+      updatePending = true;
       queueMicrotask(emit);
     }
   }
@@ -66,6 +79,20 @@
   InstrumentedRTCPeerConnection.prototype = NativePC.prototype;
   Object.defineProperty(window, "RTCPeerConnection", { configurable: true, writable: true, value: InstrumentedRTCPeerConnection });
 
+  const mediaDevices = window.navigator?.mediaDevices;
+  const nativeGetDisplayMedia = mediaDevices?.getDisplayMedia;
+  if (typeof nativeGetDisplayMedia === "function") {
+    Object.defineProperty(mediaDevices, "getDisplayMedia", {
+      configurable: true,
+      writable: true,
+      value: async function (...args) {
+        const stream = await Reflect.apply(nativeGetDisplayMedia, this, args);
+        for (const track of stream.getVideoTracks()) screenShareTracks.add(track);
+        return stream;
+      }
+    });
+  }
+
   const nativeReplaceTrack = window.RTCRtpSender && window.RTCRtpSender.prototype.replaceTrack;
   if (typeof nativeReplaceTrack === "function" && !nativeReplaceTrack.__webRTCLiveMonitorWrapped) {
     function replaceTrack(...args) {
@@ -76,7 +103,7 @@
     Object.defineProperty(window.RTCRtpSender.prototype, "replaceTrack", { configurable: true, writable: true, value: replaceTrack });
   }
 
-  window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "FRAME_GONE" }, "*"));
+  window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "FRAME_GONE" }, "*"));
   setInterval(update, 2500);
   update();
 })();

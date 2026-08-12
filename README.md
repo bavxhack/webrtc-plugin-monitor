@@ -1,6 +1,6 @@
 # WebRTC Live Monitor
 
-**WebRTC Live Monitor** ist eine schlanke Chrome-Erweiterung (Manifest V3), die für den aktiven Tab live die Zahl offener `RTCPeerConnection`-Instanzen und ihrer Audio-/Videokanäle anzeigt. Sie liest **nicht** `chrome://webrtc-internals` aus und erfasst keine Medieninhalte.
+**WebRTC Live Monitor** ist eine schlanke Chrome-Erweiterung (Manifest V3), die für den aktiven Tab live die Zahl offener `RTCPeerConnection`-Instanzen und ihrer Audio-, Kamera-Video- und Bildschirmfreigabekanäle anzeigt. Sie erfasst dabei keine Medieninhalte.
 
 ## Installation
 
@@ -9,28 +9,32 @@
 3. **Entpackte Erweiterung laden** wählen und den Repository-Ordner auswählen.
 4. Eine WebRTC-Seite öffnen und das Erweiterungssymbol anklicken.
 
+Der Quellstand verwendet eine dreiteilige Basisversion. Der GitHub-Actions-Workflow ergänzt beim Paketieren die jeweilige Run-Nummer als vierte Chrome-Versionskomponente, beispielsweise `1.3.0.42`. Dadurch ist jedes erzeugte Artefakt eindeutig einem Workflow-Lauf zugeordnet.
+
 Die Mindestversion ist Chrome 111. Der Grund ist die deklarative Ausführung eines Content Scripts in der `MAIN` World. Beide Content Scripts starten mit `document_start` und in allen Frames. Die verwendeten MV3-Mechanismen sind in der offiziellen Dokumentation zu [Content Scripts und Ausführungswelten](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [`chrome.storage.session`](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session), [Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/messaging) und [`webNavigation`](https://developer.chrome.com/docs/extensions/reference/api/webNavigation) beschrieben.
 
 ## Angezeigte Werte und genaue Kanaldefinition
 
-Berücksichtigt werden ausschließlich Peer Connections mit `connectionState !== "closed"`. Die Kanalwerte stammen jetzt aus denselben standardisierten `RTCStatsReport`-Feldern (`inbound-rtp` und `outbound-rtp`), die Chrome auch in `chrome://webrtc-internals` anzeigt:
+Berücksichtigt werden ausschließlich Peer Connections mit `connectionState !== "closed"`. Die Kanalwerte stammen aus den standardisierten `RTCStatsReport`-Feldern `inbound-rtp` und `outbound-rtp`:
 
-- **Ausgehendes Audio/Video:** ein lokaler `outbound-rtp`-Report, für den bereits mindestens ein Paket gesendet wurde.
-- **Eingehendes Audio/Video:** ein lokaler `inbound-rtp`-Report, für den tatsächlich mindestens ein Paket empfangen wurde. Vorab angelegte Receiver ohne RTP-Verkehr werden dadurch nicht mehr fälschlich gezählt.
+- **Ausgehendes Audio/Kamera-Video:** ein lokaler `outbound-rtp`-Report, für den bereits mindestens ein Paket gesendet wurde.
+- **Eingehendes Audio/Kamera-Video:** ein lokaler `inbound-rtp`-Report, für den tatsächlich mindestens ein Paket empfangen wurde. Vorab angelegte Receiver ohne RTP-Verkehr werden dadurch nicht mehr fälschlich gezählt.
 - Simulcast-Layer werden anhand ihrer MID zu einem Medienkanal zusammengefasst. Separate RTX-, RED-, ULPFEC- und FlexFEC-Reparaturreports werden nicht als zusätzliche Streams gezählt.
 - Die Bitrate wird aus der Differenz von `bytesReceived` beziehungsweise `bytesSent` und den Report-Zeitstempeln zweier aufeinanderfolgender Abfragen berechnet. Beim ersten Messpunkt wird deshalb zunächst `0 kbit/s` angezeigt.
-- **Gesamt** ist jeweils eingehend plus ausgehend. Das Badge ist Audio gesamt plus Video gesamt.
+- **Bildschirmfreigabe:** Ausgehende Tracks werden zuverlässig an ihrem Ursprung aus `getDisplayMedia()` erkannt und über Track-ID beziehungsweise MID dem RTP-Report zugeordnet. Eingehende Freigaben werden separat angezeigt, wenn der Browser sie im RTP-Report als `screenshare`, `screen`, `window` oder `browser` kennzeichnet; ohne diese optionale Kennzeichnung kann ein entfernter Track technisch nicht zuverlässig von einem Kamera-Track unterschieden werden.
+- **Gesamt** ist jeweils eingehend plus ausgehend. Das Badge summiert Audio, Kamera-Video und Bildschirmfreigaben.
 - Eine offene Peer Connection ohne Tracks wird als eine Verbindung und null Medienkanäle angezeigt.
+- Der Abschnitt **Verbindungsstatus** aggregiert `new`, `connecting`, `connected`, `disconnected` und `failed` über alle Frames des Tabs. Geschlossene Verbindungen werden nicht als aktiv gezählt; unbekannte zukünftige Zustände erzeugen keinen erfundenen Statuswert.
 
 Ein Browser kann einem Receiver bereits vor tatsächlich fließenden RTP-Medien einen nicht beendeten Track zuordnen. Nicht ausgehandelte, nur sendende oder gestoppte Transceiver werden deshalb nicht mehr als eingehend gezählt. Auch bei einem ausgehandelten Empfang lässt sich ohne Statistiken weiterhin nicht zuverlässig feststellen, ob gerade RTP-Pakete fließen; das MVP behauptet keine Aktivität auf Paketebene.
 
-Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Simulcast kann einen einzigen ausgehenden Video-Track über beispielsweise drei RTP-Encoding-Layer senden. `chrome://webrtc-internals` kann dafür drei ausgehende RTP-Streams anzeigen, während WebRTC Live Monitor gemäß der MVP-Kanaldefinition korrekt einen ausgehenden Videokanal zählt. Mehrere unterschiedliche Sender-Tracks werden dagegen einzeln gezählt. RTP-Encoding-, SSRC- oder Statistikzählung gehört nicht zu diesem ersten Meilenstein.
+Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Simulcast kann einen einzigen ausgehenden Video-Track über beispielsweise drei RTP-Encoding-Layer senden. Die Rohstatistik kann dafür drei ausgehende RTP-Streams enthalten, während WebRTC Live Monitor gemäß der Kanaldefinition korrekt einen ausgehenden Videokanal zählt. Mehrere unterschiedliche Sender-Tracks werden dagegen einzeln gezählt. RTP-Encoding-, SSRC- oder Statistikzählung gehört nicht zu diesem ersten Meilenstein.
 
 ## Architektur
 
-1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung und Änderungen der Peer Connections. `src/rtp-stats.js` liest regelmäßig deren `getStats()`-Reports aus, filtert tatsächlich übertragende RTP-Streams und berechnet die ein- und ausgehende Bitrate. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates.
+1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung und Zustandsänderungen der Peer Connections. `src/rtp-stats.js` liest deren `connectionState` und regelmäßig die `getStats()`-Reports aus, filtert tatsächlich übertragende RTP-Streams und berechnet die ein- und ausgehende Bitrate. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates; Messungen überlappen sich dabei nicht.
 2. `src/content-bridge.js` läuft isoliert, validiert Struktur, Version, Herkunftsfenster, Wertebereiche und Summen der Page-World-Nachrichten und leitet nur Zähler weiter.
-3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
+3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, unterscheidet Kamera-Videos von Bildschirmfreigaben, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
 4. Ein expliziter Action-Controller verarbeitet den Toolbar-Klick und öffnet `popup.html` in einem kleinen Popup-Fenster. Ein weiterer Klick fokussiert das bereits offene Fenster. Das Popup fragt den aktiven Tab ab, hört auf Live-Updates und kann dessen Zustand zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
 
 `<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.

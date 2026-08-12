@@ -31,10 +31,31 @@ test("valid page counts are forwarded after FRAME_READY", () => {
     source: window,
     data: {
       source: "webrtc-live-monitor",
-      version: 1,
+      version: 2,
       type: "COUNTS",
-      counts: { peers: 1, audio: { inbound: 0, outbound: 1, total: 1, inboundBitrate: 0, outboundBitrate: 0 }, video: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 } }
+      counts: { peers: 1, connectionStates: { new: 0, connecting: 0, connected: 1, disconnected: 0, failed: 0 }, audio: { inbound: 0, outbound: 1, total: 1, inboundBitrate: 0, outboundBitrate: 0 }, video: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 }, screenShare: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 } }
     }
   });
   assert.deepEqual(messages.map(message => message.type), ["FRAME_READY", "FRAME_COUNTS"]);
+});
+
+test("unknown, missing and inconsistent connection states are rejected", () => {
+  const messages = [];
+  const { window, listeners } = runBridge(message => { messages.push(message); return Promise.resolve(); });
+  const validMedia = { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 };
+  const postCounts = connectionStates => listeners.get("message")({
+    source: window,
+    data: {
+      source: "webrtc-live-monitor",
+      version: 2,
+      type: "COUNTS",
+      counts: { peers: 1, connectionStates, audio: validMedia, video: validMedia, screenShare: validMedia }
+    }
+  });
+
+  postCounts({ new: 0, connecting: 0, connected: 0, disconnected: 0, failed: 0, unknown: 1 });
+  postCounts({ new: 0, connecting: 0, connected: 2, disconnected: 0, failed: 0 });
+  postCounts({ new: 0, connecting: 0, connected: 1, disconnected: 0 });
+
+  assert.deepEqual(messages.map(message => message.type), ["FRAME_READY"]);
 });
