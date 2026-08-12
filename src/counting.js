@@ -3,7 +3,7 @@
   const KINDS = ["audio", "video"];
 
   function emptyCounts() {
-    return { peers: 0, audio: { inbound: 0, outbound: 0, total: 0 }, video: { inbound: 0, outbound: 0, total: 0 } };
+    return { peers: 0, audio: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 }, video: { inbound: 0, outbound: 0, total: 0, inboundBitrate: 0, outboundBitrate: 0 } };
   }
 
   function normalizeCounts(value) {
@@ -14,6 +14,8 @@
       result[kind].inbound = integer(value[kind] && value[kind].inbound);
       result[kind].outbound = integer(value[kind] && value[kind].outbound);
       result[kind].total = result[kind].inbound + result[kind].outbound;
+      result[kind].inboundBitrate = integer(value[kind] && value[kind].inboundBitrate);
+      result[kind].outboundBitrate = integer(value[kind] && value[kind].outboundBitrate);
     }
     return result;
   }
@@ -31,6 +33,8 @@
         total[kind].inbound += counts[kind].inbound;
         total[kind].outbound += counts[kind].outbound;
         total[kind].total += counts[kind].total;
+        total[kind].inboundBitrate += counts[kind].inboundBitrate;
+        total[kind].outboundBitrate += counts[kind].outboundBitrate;
       }
     }
     return total;

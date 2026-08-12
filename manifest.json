@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WebRTC Live Monitor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zeigt Peer Connections sowie aktive WebRTC-Audio- und Videokanäle pro Tab an.",
   "minimum_chrome_version": "111",
   "permissions": [
@@ -25,7 +25,7 @@
         "<all_urls>"
       ],
       "js": [
-        "src/peer-counting.js",
+        "src/rtp-stats.js",
         "src/main-world.js"
       ],
       "run_at": "document_start",
