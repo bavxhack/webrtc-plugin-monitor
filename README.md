@@ -11,7 +11,7 @@
 
 Der Quellstand verwendet eine dreiteilige Basisversion. Der GitHub-Actions-Workflow ergänzt beim Paketieren die jeweilige Run-Nummer als vierte Chrome-Versionskomponente, beispielsweise `1.3.0.42`. Dadurch ist jedes erzeugte Artefakt eindeutig einem Workflow-Lauf zugeordnet.
 
-Nach einem erfolgreichen Push auf `main` veröffentlicht der Workflow das ZIP zusätzlich als OCI-Artefakt in GitHub Packages. Der Tag `main` zeigt auf das neueste Paket; `run-<Nummer>` hält jeden Workflow-Lauf eindeutig abrufbar. Das Paket enthält ausschließlich das installierbare ZIP und seine SHA-256-Prüfsumme.
+Nach einem erfolgreichen Push auf `main` veröffentlicht der Workflow einen als Vorabversion gekennzeichneten GitHub Release `main-<Run-Nummer>`. An diesem Release hängen das installierbare ZIP und seine SHA-256-Prüfsumme; der Release verweist auf den zugehörigen Commit aus `main`.
 
 Die Mindestversion ist Chrome 111. Der Grund ist die deklarative Ausführung eines Content Scripts in der `MAIN` World. Beide Content Scripts starten mit `document_start` und in allen Frames. Die verwendeten MV3-Mechanismen sind in der offiziellen Dokumentation zu [Content Scripts und Ausführungswelten](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [`chrome.storage.session`](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session), [Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/messaging) und [`webNavigation`](https://developer.chrome.com/docs/extensions/reference/api/webNavigation) beschrieben.
 
