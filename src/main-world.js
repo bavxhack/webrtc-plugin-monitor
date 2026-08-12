@@ -6,22 +6,13 @@
   const NativePC = window.RTCPeerConnection;
   if (typeof NativePC !== "function") return;
   const peers = new Set();
-  const trackIds = new WeakMap();
-  let nextTrackId = 1;
+  const previousStats = new WeakMap();
   let scheduled = false;
 
-  function trackKey(track) {
-    if (!trackIds.has(track)) trackIds.set(track, nextTrackId++);
-    return trackIds.get(track);
-  }
-
-  function snapshot() {
-    return WebRTCMonitorPeerCounting.countPeerConnections(peers, trackKey);
-  }
-
-  function emit() {
+  async function emit() {
     scheduled = false;
-    window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "COUNTS", counts: snapshot() }, "*");
+    const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats);
+    window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "COUNTS", counts }, "*");
   }
 
   function update() {

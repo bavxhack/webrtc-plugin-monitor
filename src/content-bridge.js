@@ -1,9 +1,11 @@
 (() => {
   "use strict";
   const isCount = value => Number.isSafeInteger(value) && value >= 0 && value <= 100000;
+  const isBitrate = value => Number.isSafeInteger(value) && value >= 0 && value <= 1000000000;
   function validCounts(c) {
     return c && typeof c === "object" && isCount(c.peers) && ["audio", "video"].every(kind =>
       c[kind] && isCount(c[kind].inbound) && isCount(c[kind].outbound) && isCount(c[kind].total) &&
+      isBitrate(c[kind].inboundBitrate) && isBitrate(c[kind].outboundBitrate) &&
       c[kind].total === c[kind].inbound + c[kind].outbound);
   }
   function send(type, counts) {

@@ -13,11 +13,12 @@ Die Mindestversion ist Chrome 111. Der Grund ist die deklarative Ausführung ein
 
 ## Angezeigte Werte und genaue Kanaldefinition
 
-Berücksichtigt werden ausschließlich Peer Connections mit `connectionState !== "closed"`:
+Berücksichtigt werden ausschließlich Peer Connections mit `connectionState !== "closed"`. Die Kanalwerte stammen jetzt aus denselben standardisierten `RTCStatsReport`-Feldern (`inbound-rtp` und `outbound-rtp`), die Chrome auch in `chrome://webrtc-internals` anzeigt:
 
-- **Ausgehendes Audio/Video:** ein Audio-/Video-Track eines `RTCRtpSender`, dessen `readyState` nicht `ended` ist.
-- **Eingehendes Audio/Video:** ein Audio-/Video-Track eines `RTCRtpReceiver`, dessen `readyState` nicht `ended` ist und dessen nicht gestoppter Transceiver mit `currentDirection` tatsächlich für Empfang ausgehandelt ist (`recvonly` oder `sendrecv`). Auf älteren Implementierungen ohne `getTransceivers()` wird auf die Receiver-Liste zurückgefallen.
-- Derselbe Track wird innerhalb einer Peer Connection und Richtung anhand seiner Objektidentität nur einmal gezählt.
+- **Ausgehendes Audio/Video:** ein lokaler `outbound-rtp`-Report, für den bereits mindestens ein Paket gesendet wurde.
+- **Eingehendes Audio/Video:** ein lokaler `inbound-rtp`-Report, für den tatsächlich mindestens ein Paket empfangen wurde. Vorab angelegte Receiver ohne RTP-Verkehr werden dadurch nicht mehr fälschlich gezählt.
+- Simulcast-Layer werden anhand ihrer MID zu einem Medienkanal zusammengefasst. Separate RTX-, RED-, ULPFEC- und FlexFEC-Reparaturreports werden nicht als zusätzliche Streams gezählt.
+- Die Bitrate wird aus der Differenz von `bytesReceived` beziehungsweise `bytesSent` und den Report-Zeitstempeln zweier aufeinanderfolgender Abfragen berechnet. Beim ersten Messpunkt wird deshalb zunächst `0 kbit/s` angezeigt.
 - **Gesamt** ist jeweils eingehend plus ausgehend. Das Badge ist Audio gesamt plus Video gesamt.
 - Eine offene Peer Connection ohne Tracks wird als eine Verbindung und null Medienkanäle angezeigt.
 
@@ -27,10 +28,10 @@ Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Si
 
 ## Architektur
 
-1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung, `addTrack`, `removeTrack`, `addTransceiver`, `replaceTrack`, `track`, `connectionstatechange`, Track-`ended` und `close`. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates.
+1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung und Änderungen der Peer Connections. `src/rtp-stats.js` liest regelmäßig deren `getStats()`-Reports aus, filtert tatsächlich übertragende RTP-Streams und berechnet die ein- und ausgehende Bitrate. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates.
 2. `src/content-bridge.js` läuft isoliert, validiert Struktur, Version, Herkunftsfenster, Wertebereiche und Summen der Page-World-Nachrichten und leitet nur Zähler weiter.
 3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
-4. Das Popup fragt ausschließlich den aktiven Tab ab, hört auf Live-Updates und kann dessen gespeicherten Zustand zurücksetzen. Das Action-Icon wird beim Start aus JavaScript erzeugt; die optionale Erzeugung kann einen Service-Worker- oder Popup-Start niemals verhindern und hält das Repository frei von Binärdateien.
+4. Ein expliziter Action-Controller verarbeitet den Toolbar-Klick und öffnet `popup.html` in einem kleinen Popup-Fenster. Ein weiterer Klick fokussiert das bereits offene Fenster. Das Popup fragt den aktiven Tab ab, hört auf Live-Updates und kann dessen Zustand zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
 
 `<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
 
@@ -52,7 +53,7 @@ npm test
 npm run check
 ```
 
-Die Node-Tests prüfen leere Zustände, Normalisierung, Summenbildung über mehrere Frames und getrennte Tabs. Der Check parst Manifest und JavaScript, prüft die minimal erwarteten Berechtigungen, `document_start`, alle Frames sowie die Laufzeit-Icon-Erzeugung und stellt sicher, dass keine Binärdateien eingecheckt sind.
+Die Node-Tests prüfen leere Zustände, Normalisierung, Summenbildung über mehrere Frames und getrennte Tabs. Der Check parst Manifest und JavaScript, prüft den expliziten Toolbar-Klick-Controller, die minimal erwarteten Berechtigungen, `document_start`, alle Frames und stellt sicher, dass weder Binärdateien noch eigene Icons konfiguriert sind.
 
 ### Lokales Browser-Harness
 
@@ -123,4 +124,4 @@ Beim Neuladen einer Erweiterung invalidiert Chrome deren bereits in offenen Tabs
 
 ### Mehrere entpackte Versionen unterscheiden
 
-Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Symbol neu an. Das Popup zeigt die installierte Manifestversion am unteren Rand an. Das grün-blaue Monitor-Symbol wird beim Start aus JavaScript erzeugt; falls die Browserumgebung diese optionale Erzeugung nicht unterstützt, bleibt die Popup-Action trotzdem mit Chromes Standardsymbol bedienbar.
+Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Eintrag neu an. Das Popup zeigt die installierte Manifestversion am unteren Rand an. Die Erweiterung verwendet bewusst ausschließlich Chromes Standardsymbol; dadurch gibt es weder Bilddateien noch eine Icon-Erzeugung, die den Service Worker beeinflussen könnte.
