@@ -28,3 +28,32 @@ test("calculates inbound and outbound bitrate from consecutive internals stats",
   assert.equal(result.audio.inboundBitrate, 16000);
   assert.equal(result.video.outboundBitrate, 32000);
 });
+
+test("separates a getDisplayMedia track from camera video", async () => {
+  const displayTrack = { id: "display-track" };
+  const cameraTrack = { id: "camera-track" };
+  const pc = peer([[
+    { id: "display", type: "outbound-rtp", kind: "video", mid: "1", packetsSent: 2, bytesSent: 500, timestamp: 1000 },
+    { id: "camera", type: "outbound-rtp", kind: "video", mid: "2", packetsSent: 2, bytesSent: 500, timestamp: 1000 }
+  ]]);
+  pc.getTransceivers = () => [
+    { mid: "1", sender: { track: displayTrack } },
+    { mid: "2", sender: { track: cameraTrack } }
+  ];
+
+  const result = await countPeerConnections([pc], new WeakMap(), new WeakSet([displayTrack]));
+
+  assert.equal(result.screenShare.outbound, 1);
+  assert.equal(result.video.outbound, 1);
+});
+
+test("recognizes an inbound screen share declared by RTP stats", async () => {
+  const pc = peer([[
+    { id: "screen", type: "inbound-rtp", kind: "video", contentType: "screenshare", packetsReceived: 2, bytesReceived: 500, timestamp: 1000 }
+  ]]);
+
+  const result = await countPeerConnections([pc]);
+
+  assert.equal(result.screenShare.inbound, 1);
+  assert.equal(result.video.inbound, 0);
+});

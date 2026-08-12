@@ -7,11 +7,12 @@
   if (typeof NativePC !== "function") return;
   const peers = new Set();
   const previousStats = new WeakMap();
+  const screenShareTracks = new WeakSet();
   let scheduled = false;
 
   async function emit() {
     scheduled = false;
-    const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats);
+    const counts = await WebRTCMonitorRtpStats.countPeerConnections(peers, previousStats, screenShareTracks);
     window.postMessage({ source: "webrtc-live-monitor", version: 1, type: "COUNTS", counts }, "*");
   }
 
@@ -65,6 +66,20 @@
   Object.setPrototypeOf(InstrumentedRTCPeerConnection, NativePC);
   InstrumentedRTCPeerConnection.prototype = NativePC.prototype;
   Object.defineProperty(window, "RTCPeerConnection", { configurable: true, writable: true, value: InstrumentedRTCPeerConnection });
+
+  const mediaDevices = window.navigator?.mediaDevices;
+  const nativeGetDisplayMedia = mediaDevices?.getDisplayMedia;
+  if (typeof nativeGetDisplayMedia === "function") {
+    Object.defineProperty(mediaDevices, "getDisplayMedia", {
+      configurable: true,
+      writable: true,
+      value: async function (...args) {
+        const stream = await Reflect.apply(nativeGetDisplayMedia, this, args);
+        for (const track of stream.getVideoTracks()) screenShareTracks.add(track);
+        return stream;
+      }
+    });
+  }
 
   const nativeReplaceTrack = window.RTCRtpSender && window.RTCRtpSender.prototype.replaceTrack;
   if (typeof nativeReplaceTrack === "function" && !nativeReplaceTrack.__webRTCLiveMonitorWrapped) {

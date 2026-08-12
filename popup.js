@@ -4,7 +4,7 @@ const byId = id => document.getElementById(id);
 byId("version").textContent = chrome.runtime.getManifest().version;
 function render(c) {
   byId("peers").textContent = c.peers;
-  for (const kind of ["audio", "video"]) {
+  for (const kind of ["audio", "video", "screenShare"]) {
     byId(`${kind}-in`).textContent = c[kind].inbound;
     byId(`${kind}-out`).textContent = c[kind].outbound;
     byId(`${kind}-total`).textContent = c[kind].total;

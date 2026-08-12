@@ -25,7 +25,7 @@ async function tabCounts(tabId) {
 }
 async function publish(tabId) {
   const counts = await tabCounts(tabId);
-  const badge = counts.audio.total + counts.video.total;
+  const badge = counts.audio.total + counts.video.total + counts.screenShare.total;
   try {
     await chrome.action.setBadgeBackgroundColor({ tabId, color: "#3659c9" });
     await chrome.action.setBadgeText({ tabId, text: badge ? String(badge) : "" });
