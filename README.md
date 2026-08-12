@@ -9,6 +9,8 @@
 3. **Entpackte Erweiterung laden** wählen und den Repository-Ordner auswählen.
 4. Eine WebRTC-Seite öffnen und das Erweiterungssymbol anklicken.
 
+Der Quellstand verwendet eine dreiteilige Basisversion. Der GitHub-Actions-Workflow ergänzt beim Paketieren die jeweilige Run-Nummer als vierte Chrome-Versionskomponente, beispielsweise `1.3.0.42`. Dadurch ist jedes erzeugte Artefakt eindeutig einem Workflow-Lauf zugeordnet.
+
 Die Mindestversion ist Chrome 111. Der Grund ist die deklarative Ausführung eines Content Scripts in der `MAIN` World. Beide Content Scripts starten mit `document_start` und in allen Frames. Die verwendeten MV3-Mechanismen sind in der offiziellen Dokumentation zu [Content Scripts und Ausführungswelten](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [`chrome.storage.session`](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session), [Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/messaging) und [`webNavigation`](https://developer.chrome.com/docs/extensions/reference/api/webNavigation) beschrieben.
 
 ## Angezeigte Werte und genaue Kanaldefinition

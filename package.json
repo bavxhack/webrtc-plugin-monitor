@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node --test",
     "check": "node tests/check-extension.js",
+    "build:version": "node scripts/set-build-version.js",
     "package": "bash scripts/package-extension.sh"
   }
 }
