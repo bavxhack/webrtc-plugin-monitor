@@ -8,6 +8,8 @@ archive="${dist_dir}/webrtc-live-monitor.zip"
 
 rm -rf "${stage_dir}" "${archive}" "${archive}.sha256"
 mkdir -p "${stage_dir}/src"
+mkdir -p "${stage_dir}/icon"
+
 
 cp "${root_dir}/manifest.json" "${root_dir}/popup.html" \
   "${root_dir}/popup.js" "${root_dir}/popup.css" \
