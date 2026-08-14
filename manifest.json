@@ -4,9 +4,8 @@
   "version": "1.3.0",
   "description": "Zeigt Peer Connections sowie aktive WebRTC-Audio-, Video- und Bildschirmfreigabekanäle pro Tab an.",
   "minimum_chrome_version": "111",
-  "permissions": [
+ "permissions": [
     "storage",
-    "tabs",
     "webNavigation"
   ],
   "host_permissions": [
