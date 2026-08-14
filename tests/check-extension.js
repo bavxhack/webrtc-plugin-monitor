@@ -6,7 +6,7 @@ assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.background.service_worker, "src/service-worker.js");
 assert.equal(manifest.action.default_popup, undefined);
 assert(fs.existsSync("popup.html"));
-assert.deepEqual(new Set(manifest.permissions), new Set(["storage", "tabs", "webNavigation"]));
+assert.deepEqual(new Set(manifest.permissions), new Set(["storage", "webNavigation"]));
 for (const entry of manifest.content_scripts) {
   assert.equal(entry.run_at, "document_start");
   assert.equal(entry.all_frames, true);
