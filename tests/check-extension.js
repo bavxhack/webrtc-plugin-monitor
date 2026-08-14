@@ -14,7 +14,7 @@ for (const entry of manifest.content_scripts) {
 for (const file of ["src/counting.js", "src/action-controller.js", "src/rtp-stats.js", "src/main-world.js", "src/content-bridge.js", "src/service-worker.js", "scripts/set-build-version.js", "popup.js", "demo.js"]) {
   new vm.Script(fs.readFileSync(file, "utf8"), { filename: file });
 }
-assert.equal(manifest.icons, undefined);
+assert.equal(manifest.icons, ["128"]);
 assert.equal(manifest.action.default_icon, undefined);
 const binaryExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip"]);
 const repositoryFiles = require("node:child_process").execFileSync("git", ["ls-files"], { encoding: "utf8" }).trim().split("\n");
