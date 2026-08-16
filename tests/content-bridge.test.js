@@ -59,3 +59,18 @@ test("unknown, missing and inconsistent connection states are rejected", () => {
 
   assert.deepEqual(messages.map(message => message.type), ["FRAME_READY"]);
 });
+
+test("valid device inventories are forwarded and malformed entries are rejected", () => {
+  const messages = [];
+  const { window, listeners } = runBridge(message => { messages.push(message); return Promise.resolve(); });
+  const postDevices = devices => listeners.get("message")({
+    source: window,
+    data: { source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices }
+  });
+
+  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }] });
+  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [] });
+
+  assert.deepEqual(messages.map(message => message.type), ["FRAME_READY", "FRAME_DEVICES"]);
+  assert.deepEqual(messages[1].devices.used, [{ kind: "videoinput", label: "USB camera" }]);
+});

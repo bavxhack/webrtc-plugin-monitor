@@ -60,3 +60,49 @@ test("connection-state changes update promptly without overlapping getStats meas
   assert.equal(messages.length, 2);
   assert(messages.every(message => message.version === 2 && message.type === "COUNTS"));
 });
+
+test("reports available devices and tracks used through getUserMedia", async () => {
+  const messages = [];
+  const trackListeners = new Map();
+  const track = {
+    kind: "audio",
+    label: "USB microphone",
+    readyState: "live",
+    addEventListener(type, listener) { trackListeners.set(type, listener); }
+  };
+  const mediaDevices = {
+    addEventListener() {},
+    async enumerateDevices() { return [{ kind: "audioinput", label: "USB microphone" }]; },
+    async getUserMedia() { return { getTracks: () => [track] }; }
+  };
+  const window = {
+    navigator: { mediaDevices },
+    addEventListener() {},
+    postMessage(message) { messages.push(message); }
+  };
+
+  vm.runInNewContext(source, {
+    Promise,
+    Reflect,
+    Set,
+    WeakMap,
+    WeakSet,
+    WebRTCMonitorRtpStats: { async countPeerConnections() { return { peers: 0 }; } },
+    queueMicrotask,
+    setInterval() {},
+    window
+  }, { filename: "src/main-world.js" });
+  await nextTurn();
+  await mediaDevices.getUserMedia({ audio: true });
+
+  const deviceMessages = messages.filter(message => message.type === "DEVICES");
+  assert.deepEqual(structuredClone(deviceMessages.at(-1).devices), {
+    available: [{ kind: "audioinput", label: "USB microphone" }],
+    used: [{ kind: "audioinput", label: "USB microphone" }]
+  });
+
+  track.readyState = "ended";
+  trackListeners.get("ended")();
+  await nextTurn();
+  assert.deepEqual(structuredClone(messages.filter(message => message.type === "DEVICES").at(-1).devices.used), []);
+});

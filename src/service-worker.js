@@ -23,8 +23,21 @@ async function tabCounts(tabId) {
   const state = await statePromise;
   return WebRTCMonitorCounting.aggregateFrames(state[String(tabId)] || {});
 }
+function normalizeDevices(devices) {
+  const normalize = list => Array.isArray(list) ? list.map(({ kind, label }) => ({ kind, label })).slice(0, 100) : [];
+  return { available: normalize(devices?.available), used: normalize(devices?.used) };
+}
+async function tabDevices(tabId) {
+  const state = await statePromise;
+  const frames = Object.values(state[String(tabId)] || {});
+  const unique = list => [...new Map(list.map(device => [`${device.kind}\0${device.label}`, device])).values()];
+  return {
+    available: unique(frames.flatMap(frame => frame.devices?.available || [])),
+    used: unique(frames.flatMap(frame => frame.devices?.used || []))
+  };
+}
 async function publish(tabId) {
-  const counts = await tabCounts(tabId);
+  const [counts, devices] = await Promise.all([tabCounts(tabId), tabDevices(tabId)]);
   const badge = counts.audio.total + counts.video.total + counts.screenShare.total;
   try {
     await chrome.action.setBadgeBackgroundColor({ tabId, color: "#3659c9" });
@@ -34,7 +47,7 @@ async function publish(tabId) {
     await mutate(state => { delete state[String(tabId)]; });
     return;
   }
-  chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "TAB_UPDATE", tabId, counts }).catch(() => {});
+  chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "TAB_UPDATE", tabId, counts, devices }).catch(() => {});
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -42,7 +55,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_TAB" || message.type === "RESET_TAB") {
     if (sender.tab || !Number.isInteger(message.tabId)) return false;
     if (message.type === "GET_TAB") {
-      tabCounts(message.tabId).then(counts => sendResponse({ counts })).catch(() => sendResponse({ counts: WebRTCMonitorCounting.emptyCounts() }));
+      Promise.all([tabCounts(message.tabId), tabDevices(message.tabId)])
+        .then(([counts, devices]) => sendResponse({ counts, devices }))
+        .catch(() => sendResponse({ counts: WebRTCMonitorCounting.emptyCounts(), devices: { available: [], used: [] } }));
     } else {
       mutate(state => { delete state[String(message.tabId)]; })
         .then(() => publish(message.tabId))
@@ -65,8 +80,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "FRAME_COUNTS") {
     mutate(state => {
       const frames = state[String(tabId)] ||= {};
-      frames[keyFor(sender)] = { documentId: sender.documentId || "", counts: WebRTCMonitorCounting.normalizeCounts(message.counts), updatedAt: Date.now() };
+      const previous = frames[keyFor(sender)];
+      frames[keyFor(sender)] = {
+        documentId: sender.documentId || "",
+        counts: WebRTCMonitorCounting.normalizeCounts(message.counts),
+        devices: previous?.devices,
+        updatedAt: Date.now()
+      };
     }).then(() => publish(tabId)).catch(error => console.error("WebRTC Live Monitor: processing FRAME_COUNTS failed.", error));
+  } else if (message.type === "FRAME_DEVICES") {
+    mutate(state => {
+      const frames = state[String(tabId)] ||= {};
+      const frame = frames[keyFor(sender)] ||= { documentId: sender.documentId || "", counts: WebRTCMonitorCounting.emptyCounts(), updatedAt: Date.now() };
+      frame.devices = normalizeDevices(message.devices);
+      frame.updatedAt = Date.now();
+    }).then(() => publish(tabId)).catch(error => console.error("WebRTC Live Monitor: processing FRAME_DEVICES failed.", error));
   } else if (message.type === "FRAME_GONE") {
     runTask(
       () => mutate(state => { if (state[String(tabId)]) delete state[String(tabId)][keyFor(sender)]; }).then(() => publish(tabId)),

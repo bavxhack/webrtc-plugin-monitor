@@ -4,10 +4,10 @@
   Object.defineProperty(window, "__webRTCLiveMonitorInstalled", { value: true });
 
   const NativePC = window.RTCPeerConnection;
-  if (typeof NativePC !== "function") return;
   const peers = new Set();
   const previousStats = new WeakMap();
   const screenShareTracks = new WeakSet();
+  const localDeviceTracks = new Set();
   let updatePending = false;
   let measurementRunning = false;
 
@@ -37,6 +37,37 @@
 
   function observeTrack(track) {
     if (track && typeof track.addEventListener === "function") track.addEventListener("ended", update);
+  }
+
+  async function emitDevices() {
+    const mediaDevices = window.navigator?.mediaDevices;
+    if (!mediaDevices || typeof mediaDevices.enumerateDevices !== "function") return;
+    try {
+      const available = (await mediaDevices.enumerateDevices()).map(device => ({
+        kind: device.kind,
+        label: device.label
+      }));
+      const used = [...localDeviceTracks]
+        .filter(track => track.readyState !== "ended")
+        .map(track => ({
+          kind: track.kind === "audio" ? "audioinput" : "videoinput",
+          label: track.label || ""
+        }));
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used } }, "*");
+    } catch {
+      // Device enumeration can be denied by a document's Permissions Policy.
+    }
+  }
+
+  function observeLocalDeviceTrack(track) {
+    if (!track) return;
+    localDeviceTracks.add(track);
+    if (typeof track.addEventListener === "function") {
+      track.addEventListener("ended", () => {
+        localDeviceTracks.delete(track);
+        void emitDevices();
+      }, { once: true });
+    }
   }
 
   function wrapMethod(pc, name, after) {
@@ -69,17 +100,35 @@
     update();
   }
 
-  function InstrumentedRTCPeerConnection(...args) {
-    if (!new.target) return Reflect.apply(NativePC, this, args);
-    const pc = Reflect.construct(NativePC, args, new.target);
-    observe(pc);
-    return pc;
+  if (typeof NativePC === "function") {
+    function InstrumentedRTCPeerConnection(...args) {
+      if (!new.target) return Reflect.apply(NativePC, this, args);
+      const pc = Reflect.construct(NativePC, args, new.target);
+      observe(pc);
+      return pc;
+    }
+    Object.setPrototypeOf(InstrumentedRTCPeerConnection, NativePC);
+    InstrumentedRTCPeerConnection.prototype = NativePC.prototype;
+    Object.defineProperty(window, "RTCPeerConnection", { configurable: true, writable: true, value: InstrumentedRTCPeerConnection });
   }
-  Object.setPrototypeOf(InstrumentedRTCPeerConnection, NativePC);
-  InstrumentedRTCPeerConnection.prototype = NativePC.prototype;
-  Object.defineProperty(window, "RTCPeerConnection", { configurable: true, writable: true, value: InstrumentedRTCPeerConnection });
 
   const mediaDevices = window.navigator?.mediaDevices;
+  const nativeGetUserMedia = mediaDevices?.getUserMedia;
+  if (typeof nativeGetUserMedia === "function") {
+    Object.defineProperty(mediaDevices, "getUserMedia", {
+      configurable: true,
+      writable: true,
+      value: async function (...args) {
+        const stream = await Reflect.apply(nativeGetUserMedia, this, args);
+        for (const track of stream.getTracks()) observeLocalDeviceTrack(track);
+        await emitDevices();
+        return stream;
+      }
+    });
+  }
+  if (mediaDevices && typeof mediaDevices.addEventListener === "function") {
+    mediaDevices.addEventListener("devicechange", emitDevices);
+  }
   const nativeGetDisplayMedia = mediaDevices?.getDisplayMedia;
   if (typeof nativeGetDisplayMedia === "function") {
     Object.defineProperty(mediaDevices, "getDisplayMedia", {
@@ -106,4 +155,5 @@
   window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "FRAME_GONE" }, "*"));
   setInterval(update, 2500);
   update();
+  void emitDevices();
 })();
