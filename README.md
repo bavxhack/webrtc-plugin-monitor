@@ -1,6 +1,6 @@
 # WebRTC Live Monitor
 
-**WebRTC Live Monitor** ist eine schlanke Chrome-Erweiterung (Manifest V3), die für den aktiven Tab live die Zahl offener `RTCPeerConnection`-Instanzen und ihrer Audio-, Kamera-Video- und Bildschirmfreigabekanäle anzeigt. Sie erfasst dabei keine Medieninhalte.
+**WebRTC Live Monitor** ist eine schlanke Chrome-Erweiterung (Manifest V3), die für den aktiven Tab live die Zahl offener `RTCPeerConnection`-Instanzen, ihrer Medienkanäle sowie verfügbare und im Tab verwendete Audio-/Videogeräte anzeigt. Sie erfasst dabei keine Medieninhalte.
 
 ## Installation
 
@@ -39,6 +39,8 @@ Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Si
 3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, unterscheidet Kamera-Videos von Bildschirmfreigaben, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
 4. Ein expliziter Action-Controller verarbeitet den Toolbar-Klick und öffnet `popup.html` in einem kleinen Popup-Fenster. Ein weiterer Klick fokussiert das bereits offene Fenster. Das Popup fragt den aktiven Tab ab, hört auf Live-Updates und kann dessen Zustand zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
 
+Die Geräteliste stammt aus `navigator.mediaDevices.enumerateDevices()`. Chrome gibt über diese Schnittstelle Mikrofone, Lautsprecher und Kameras aus, aber nicht, ob sie intern, per USB oder anders angeschlossen sind. Deshalb zeigt das Popup sämtliche verfügbaren Mediengeräte; ein USB-Gerät ist anhand seiner vom Browser gelieferten Bezeichnung erkennbar. Gerätebezeichnungen können bis zur Medienfreigabe anonym bleiben. Als „in diesem Tab verwendet“ gelten aktive Tracks, die der Tab über `getUserMedia()` erhalten hat. Bildschirmfreigaben gehören nicht zur Liste physischer Geräte.
+
 `<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
 
 ## Datenschutz und Sicherheit
@@ -48,7 +50,7 @@ Die Erweiterung:
 - liest, zeichnet oder speichert keine Audio-/Videodaten;
 - speichert weder SDP, IP-Adressen, URLs, Codecs, Bitraten, Paketstatistiken noch ICE-Details;
 - sendet keine Telemetrie und kontaktiert keine externen Server;
-- persistiert nur nichtnegative Zähler, Dokumentkennung und Aktualisierungszeit im arbeitsspeicherartigen Session Storage.
+- persistiert nur nichtnegative Zähler, die vom Browser gelieferten Mediengerätebezeichnungen, Dokumentkennung und Aktualisierungszeit im arbeitsspeicherartigen Session Storage.
 
 Die Kommunikation aus der Main World muss die DOM-Nachrichtenbrücke passieren. Die isolierte Bridge akzeptiert nur Nachrichten vom eigenen `window`, mit festem Namespace und Protokollversion, bekannten Nachrichtentypen, begrenzten Ganzzahlen und konsistenten Summen. Der Service Worker vertraut Tab- und Frame-Identität nur den von Chrome gelieferten `sender`-Metadaten an. **Einschränkung:** Seiten-Code kann den bekannten Namespace sehen und passende `window.postMessage`-Nachrichten imitieren. Die Validierung begrenzt Form und Auswirkung, kann Spoofing innerhalb desselben Seitenkontexts aber nicht kryptografisch verhindern. Die Werte sind deshalb Diagnoseinformationen, keine Sicherheitsentscheidung.
 

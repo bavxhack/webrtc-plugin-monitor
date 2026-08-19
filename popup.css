@@ -57,6 +57,14 @@ dd { display: flex; align-items: baseline; gap: 7px; margin: 0; color: var(--nav
 dd small { color: #8490a2; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .total { margin-top: 4px; padding-top: 8px !important; border-top: 1px solid var(--line); }
 
+.devices h3 { margin: 10px 0 5px; color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.devices ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.devices li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 7px; padding: 7px 8px; border-radius: 9px; background: #f4f8f7; }
+.devices li span { color: var(--mint-dark); font-size: 10px; font-weight: 800; }
+.devices li strong { min-width: 0; font-size: 11px; overflow-wrap: anywhere; }
+.devices li.empty { display: block; color: var(--muted); font-size: 11px; }
+.device-note { margin-top: 9px; color: var(--muted); font-size: 9px; }
+
 .help { margin: 12px 2px; color: var(--muted); font-size: 11px; text-align: center; }
 .actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 button { min-height: 39px; border: 0; border-radius: 11px; cursor: pointer; font: inherit; font-weight: 800; transition: transform .15s ease, background .15s ease; }

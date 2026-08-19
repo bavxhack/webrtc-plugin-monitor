@@ -18,6 +18,31 @@ function render(c) {
   byId("pulse").className = status.className;
   byId("updated").textContent = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date());
 }
+function renderDevices(devices = { available: [], used: [] }) {
+  const labels = { audioinput: "Mikrofon", audiooutput: "Lautsprecher", videoinput: "Kamera" };
+  const renderList = (id, list, emptyText) => {
+    const target = byId(id);
+    target.replaceChildren();
+    if (!list.length) {
+      const item = document.createElement("li");
+      item.className = "empty";
+      item.textContent = emptyText;
+      target.append(item);
+      return;
+    }
+    for (const device of list) {
+      const item = document.createElement("li");
+      const kind = document.createElement("span");
+      const name = document.createElement("strong");
+      kind.textContent = labels[device.kind] || "Gerät";
+      name.textContent = device.label || "Bezeichnung erst nach Freigabe sichtbar";
+      item.append(kind, name);
+      target.append(item);
+    }
+  };
+  renderList("used-devices", devices.used || [], "Keine Geräte verwendet");
+  renderList("available-devices", devices.available || [], "Keine Geräte erkannt");
+}
 function connectionStatus(c) {
   if (c.connectionStates.connected > 0) return { text: "WebRTC verbunden", className: "connected" };
   if (c.connectionStates.connecting > 0) return { text: "WebRTC-Verbindung wird aufgebaut", className: "connecting" };
@@ -41,9 +66,13 @@ async function refresh() {
   if (!Number.isInteger(activeTabId)) return;
   const response = await chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "GET_TAB", tabId: activeTabId });
   render(response.counts);
+  renderDevices(response.devices);
 }
 chrome.runtime.onMessage.addListener(message => {
-  if (message && message.namespace === "webrtc-live-monitor" && message.type === "TAB_UPDATE" && message.tabId === activeTabId) render(message.counts);
+  if (message && message.namespace === "webrtc-live-monitor" && message.type === "TAB_UPDATE" && message.tabId === activeTabId) {
+    render(message.counts);
+    renderDevices(message.devices);
+  }
 });
 byId("demo").addEventListener("click", async () => {
   await chrome.tabs.create({ url: chrome.runtime.getURL("demo.html") });
