@@ -57,8 +57,9 @@ test("connection-state changes update promptly without overlapping getStats meas
   measurements.shift()({ peers: 1 });
   await nextTurn();
 
-  assert.equal(messages.length, 2);
-  assert(messages.every(message => message.version === 2 && message.type === "COUNTS"));
+  const countMessages = messages.filter(message => message.type === "COUNTS");
+  assert.equal(countMessages.length, 2);
+  assert(countMessages.every(message => message.version === 2));
 });
 
 test("reports available devices and tracks used through getUserMedia", async () => {
@@ -139,4 +140,42 @@ test("reports device lists even while a permission query remains pending", async
     available: [{ kind: "videoinput", label: "Camera" }],
     used: []
   });
+});
+
+test("replies to the isolated bridge device request after both worlds are ready", async () => {
+  const listeners = new Map();
+  const messages = [];
+  const mediaDevices = {
+    addEventListener() {},
+    async enumerateDevices() { return [{ kind: "audioinput", label: "Microphone" }]; }
+  };
+  const window = {
+    navigator: { mediaDevices },
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    postMessage(message) { messages.push(message); }
+  };
+
+  vm.runInNewContext(source, {
+    Promise,
+    Reflect,
+    Set,
+    WeakMap,
+    WeakSet,
+    WebRTCMonitorRtpStats: { async countPeerConnections() { return { peers: 0 }; } },
+    queueMicrotask,
+    setInterval() {},
+    window
+  }, { filename: "src/main-world.js" });
+  await nextTurn();
+  messages.length = 0;
+
+  listeners.get("message")({
+    source: window,
+    data: { source: "webrtc-live-monitor-bridge", version: 1, type: "REQUEST_DEVICES" }
+  });
+  await nextTurn();
+
+  assert.deepEqual(structuredClone(messages.find(message => message.type === "DEVICES").devices.available), [
+    { kind: "audioinput", label: "Microphone" }
+  ]);
 });

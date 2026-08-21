@@ -8,7 +8,8 @@ const bridgeSource = fs.readFileSync("src/content-bridge.js", "utf8");
 function runBridge(sendMessage) {
   const listeners = new Map();
   const window = {
-    addEventListener(type, listener) { listeners.set(type, listener); }
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    postMessage() {}
   };
   const context = { window, chrome: { runtime: { sendMessage } } };
   vm.runInNewContext(bridgeSource, context, { filename: "src/content-bridge.js" });

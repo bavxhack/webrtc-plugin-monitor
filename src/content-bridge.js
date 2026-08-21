@@ -31,11 +31,17 @@
       ["granted", "prompt", "denied", "unknown"].includes(access.camera);
     return devices && validAccess(devices.access) && validList(devices.available) && validList(devices.used);
   }
+  const requestDevices = () => window.postMessage({ source: "webrtc-live-monitor-bridge", version: 1, type: "REQUEST_DEVICES" }, "*");
   window.addEventListener("message", event => {
+    if (event.source === window && event.data?.source === "webrtc-live-monitor" && event.data.version === 2 && event.data.type === "DEVICE_REPORTER_READY") {
+      requestDevices();
+      return;
+    }
     if (event.source !== window || !event.data || event.data.source !== "webrtc-live-monitor" || event.data.version !== 2) return;
     if (event.data.type === "COUNTS" && validCounts(event.data.counts)) send("FRAME_COUNTS", event.data.counts);
     if (event.data.type === "DEVICES" && validDevices(event.data.devices)) send("FRAME_DEVICES", event.data.devices);
     if (event.data.type === "FRAME_GONE") send("FRAME_GONE");
   });
+  requestDevices();
   send("FRAME_READY");
 })();

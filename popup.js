@@ -46,16 +46,23 @@ function renderDevices(devices = { available: [], used: [] }) {
   accessList.replaceChildren();
   const accessLabels = { microphone: "Mikrofon", camera: "Kamera" };
   const stateLabels = { granted: "Zugriff erlaubt", prompt: "Noch nicht angefragt", denied: "Zugriff blockiert", unknown: "Status nicht verfügbar" };
+  const accessKinds = { microphone: "audioinput", camera: "videoinput" };
   for (const permission of ["microphone", "camera"]) {
     const state = devices.access?.[permission] || "unknown";
-    const item = document.createElement("li");
-    item.className = `permission-${state}`;
-    const kind = document.createElement("span");
-    const status = document.createElement("strong");
-    kind.textContent = accessLabels[permission];
-    status.textContent = stateLabels[state];
-    item.append(kind, status);
-    accessList.append(item);
+    const accessibleDevices = state === "granted"
+      ? (devices.available || []).filter(device => device.kind === accessKinds[permission])
+      : [];
+    const entries = accessibleDevices.length ? accessibleDevices : [{ label: stateLabels[state] }];
+    for (const device of entries) {
+      const item = document.createElement("li");
+      item.className = `permission-${state}`;
+      const kind = document.createElement("span");
+      const status = document.createElement("strong");
+      kind.textContent = accessLabels[permission];
+      status.textContent = device.label || "Gerätebezeichnung nicht verfügbar";
+      item.append(kind, status);
+      accessList.append(item);
+    }
   }
 }
 

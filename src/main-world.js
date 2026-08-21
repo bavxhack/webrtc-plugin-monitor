@@ -182,6 +182,11 @@
     Object.defineProperty(window.RTCRtpSender.prototype, "replaceTrack", { configurable: true, writable: true, value: replaceTrack });
   }
 
+  window.addEventListener("message", event => {
+    if (event.source !== window || event.data?.source !== "webrtc-live-monitor-bridge" || event.data.version !== 1 || event.data.type !== "REQUEST_DEVICES") return;
+    void emitDevices({ refreshAccess: true });
+  });
+  window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICE_REPORTER_READY" }, "*");
   window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "FRAME_GONE" }, "*"));
   setInterval(update, 2500);
   update();
