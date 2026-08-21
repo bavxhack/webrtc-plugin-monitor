@@ -14,9 +14,9 @@ assert.equal(
   "src/service-worker.js"
 );
 
-assert.equal(manifest.action.default_popup, undefined);
+assert.equal(manifest.action.default_popup, "popup.html");
 assert(fs.existsSync("popup.html"));
-assert.equal(manifest.side_panel.default_path, "popup.html");
+assert.equal(manifest.side_panel.default_path, "popup.html?view=side-panel");
 
 assert.deepEqual(
   new Set(manifest.permissions),
@@ -30,7 +30,6 @@ for (const entry of manifest.content_scripts) {
 
 const javascriptFiles = [
   "src/counting.js",
-  "src/action-controller.js",
   "src/rtp-stats.js",
   "src/main-world.js",
   "src/content-bridge.js",
@@ -91,7 +90,7 @@ assert.doesNotMatch(
 
 assert.match(
   workerSource,
-  /WebRTCMonitorActionController\.install/
+  /^importScripts\("counting\.js"\);/m
 );
 
 const workflowSource = fs.readFileSync(
@@ -120,5 +119,5 @@ assert.match(
 );
 
 console.log(
-  "Manifest, side panel controller, JavaScript syntax, permissions and assets are valid."
+  "Manifest, popup and optional side panel, JavaScript syntax, permissions and assets are valid."
 );

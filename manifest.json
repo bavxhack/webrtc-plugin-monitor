@@ -16,10 +16,11 @@
     "service_worker": "src/service-worker.js"
   },
   "action": {
-    "default_title": "WebRTC Live Monitor"
+    "default_title": "WebRTC Live Monitor",
+    "default_popup": "popup.html"
   },
   "side_panel": {
-    "default_path": "popup.html"
+    "default_path": "popup.html?view=side-panel"
   },
   "content_scripts": [
     {

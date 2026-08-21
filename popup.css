@@ -22,6 +22,8 @@ h2 { font-size: 14px; line-height: 1.25; letter-spacing: -.01em; }
 .hero { margin: -18px -18px 14px; padding: 17px 18px 24px; color: #fff; background: radial-gradient(circle at 90% 0, #275170 0, transparent 42%), linear-gradient(135deg, #111d36, #183653); border-radius: 0 0 26px 26px; box-shadow: 0 12px 32px #14233d24; }
 .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 20px; font-size: 13px; letter-spacing: .02em; }
 .brand strong { color: #7ce8c3; }
+.view-switch { min-height: 30px; margin-left: auto; padding: 5px 9px; border: 1px solid #7ce8c366; border-radius: 9px; color: #d9fff2; background: #ffffff12; font-size: 10px; }
+.view-switch:hover { background: #ffffff20; }
 .brand-mark { display: flex; align-items: end; gap: 2px; width: 23px; height: 23px; padding: 5px; border-radius: 7px; background: var(--mint); }
 .brand-mark i { display: block; width: 3px; border-radius: 3px; background: #10243b; }
 .brand-mark i:nth-child(1) { height: 7px; }.brand-mark i:nth-child(2) { height: 12px; }.brand-mark i:nth-child(3) { height: 9px; }

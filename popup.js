@@ -34,6 +34,35 @@ class DevicesTabsController {
 }
 
 new DevicesTabsController(["used-devices-tab", "available-devices-tab"]);
+
+class ViewModeController {
+  constructor(button, viewMode) {
+    this.button = button;
+    this.isSidePanel = viewMode === "side-panel";
+    this.button.textContent = this.isSidePanel ? "Popover verwenden" : "Im Seitenpanel öffnen";
+    this.button.addEventListener("click", () => this.switchView());
+  }
+
+  async switchView() {
+    this.button.disabled = true;
+    try {
+      if (this.isSidePanel) {
+        await chrome.sidePanel.setOptions({ enabled: false });
+        return;
+      }
+      const currentWindow = await chrome.windows.getCurrent();
+      await chrome.sidePanel.setOptions({ enabled: true, path: "popup.html?view=side-panel" });
+      await chrome.sidePanel.open({ windowId: currentWindow.id });
+      window.close();
+    } catch (error) {
+      this.button.disabled = false;
+      byId("help").textContent = `Ansicht konnte nicht gewechselt werden: ${error.message}`;
+    }
+  }
+}
+
+const viewMode = new URLSearchParams(location.search).get("view");
+new ViewModeController(byId("switch-view"), viewMode);
 function render(c) {
   byId("peers").textContent = c.peers;
   for (const state of CONNECTION_STATES) byId(`state-${state}`).textContent = c.connectionStates[state];
