@@ -47,7 +47,28 @@ for (const file of javascriptFiles) {
 }
 
 assert.equal(manifest.action.default_icon, undefined);
-assert.equal(manifest.icons, undefined);
+assert.ok(
+  manifest.icons,
+  "Im Manifest fehlt das icons-Objekt."
+);
+
+assert.ok(
+  Object.prototype.hasOwnProperty.call(manifest.icons, "128"),
+  'Im Manifest fehlt das Icon mit der Größe "128".'
+);
+
+const icon128 = manifest.icons["128"];
+
+assert.equal(
+  typeof icon128,
+  "string",
+  'Der Wert von manifest.icons["128"] muss ein Dateipfad sein.'
+);
+
+assert.ok(
+  fs.existsSync(icon128),
+  `Die Icon-Datei existiert nicht: ${icon128}`
+);
 
 /*
  * Prüfen, ob das im Manifest angegebene Icon von Git erfasst wird.
