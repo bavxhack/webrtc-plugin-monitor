@@ -107,3 +107,36 @@ test("reports available devices and tracks used through getUserMedia", async () 
   await nextTurn();
   assert.deepEqual(structuredClone(messages.filter(message => message.type === "DEVICES").at(-1).devices.used), []);
 });
+
+test("reports device lists even while a permission query remains pending", async () => {
+  const messages = [];
+  const mediaDevices = {
+    addEventListener() {},
+    async enumerateDevices() { return [{ kind: "videoinput", label: "Camera" }]; }
+  };
+  const window = {
+    navigator: { mediaDevices, permissions: { query() { return new Promise(() => {}); } } },
+    addEventListener() {},
+    postMessage(message) { messages.push(message); }
+  };
+
+  vm.runInNewContext(source, {
+    Promise,
+    Reflect,
+    Set,
+    WeakMap,
+    WeakSet,
+    WebRTCMonitorRtpStats: { async countPeerConnections() { return { peers: 0 }; } },
+    queueMicrotask,
+    setInterval() {},
+    window
+  }, { filename: "src/main-world.js" });
+  await nextTurn();
+
+  const devices = structuredClone(messages.find(message => message.type === "DEVICES").devices);
+  assert.deepEqual(devices, {
+    access: { camera: "unknown", microphone: "unknown" },
+    available: [{ kind: "videoinput", label: "Camera" }],
+    used: []
+  });
+});

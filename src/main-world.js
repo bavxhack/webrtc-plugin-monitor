@@ -8,6 +8,8 @@
   const previousStats = new WeakMap();
   const screenShareTracks = new WeakSet();
   const localDeviceTracks = new Set();
+  const deviceAccess = { microphone: "unknown", camera: "unknown" };
+  const pendingPermissionQueries = new Set();
   let updatePending = false;
   let measurementRunning = false;
 
@@ -39,7 +41,31 @@
     if (track && typeof track.addEventListener === "function") track.addEventListener("ended", update);
   }
 
-  async function emitDevices() {
+  function refreshDeviceAccess() {
+    const permissions = window.navigator?.permissions;
+    if (!permissions || typeof permissions.query !== "function") return;
+    for (const permission of ["microphone", "camera"]) {
+      if (pendingPermissionQueries.has(permission)) continue;
+      pendingPermissionQueries.add(permission);
+      let query;
+      try {
+        query = permissions.query({ name: permission });
+      } catch {
+        deviceAccess[permission] = "unknown";
+        pendingPermissionQueries.delete(permission);
+        continue;
+      }
+      Promise.resolve(query)
+        .then(status => {
+          deviceAccess[permission] = status?.state || "unknown";
+          void emitDevices();
+        })
+        .catch(() => { deviceAccess[permission] = "unknown"; })
+        .finally(() => pendingPermissionQueries.delete(permission));
+    }
+  }
+
+  async function emitDevices({ refreshAccess = false } = {}) {
     const mediaDevices = window.navigator?.mediaDevices;
     if (!mediaDevices || typeof mediaDevices.enumerateDevices !== "function") return;
     try {
@@ -47,21 +73,14 @@
         kind: device.kind,
         label: device.label
       }));
-      const access = {};
-      for (const permission of ["microphone", "camera"]) {
-        try {
-          access[permission] = (await window.navigator.permissions?.query({ name: permission }))?.state || "unknown";
-        } catch {
-          access[permission] = "unknown";
-        }
-      }
       const used = [...localDeviceTracks]
         .filter(track => track.readyState !== "ended")
         .map(track => ({
           kind: track.kind === "audio" ? "audioinput" : "videoinput",
           label: track.label || ""
         }));
-      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { access, available, used } }, "*");
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { access: { ...deviceAccess }, available, used } }, "*");
+      if (refreshAccess) refreshDeviceAccess();
     } catch {
       // Device enumeration can be denied by a document's Permissions Policy.
     }
@@ -132,7 +151,7 @@
           for (const track of stream.getTracks()) observeLocalDeviceTrack(track);
           return stream;
         } finally {
-          await emitDevices();
+          await emitDevices({ refreshAccess: true });
         }
       }
     });
@@ -166,5 +185,5 @@
   window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "FRAME_GONE" }, "*"));
   setInterval(update, 2500);
   update();
-  void emitDevices();
+  void emitDevices({ refreshAccess: true });
 })();
