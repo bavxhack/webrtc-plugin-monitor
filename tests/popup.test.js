@@ -5,6 +5,12 @@ const vm = require("node:vm");
 
 const source = fs.readFileSync("popup.js", "utf8");
 
+test("view controller supports switching between popover and side panel", () => {
+  assert.match(source, /chrome\.sidePanel\.open\(\{ windowId: currentWindow\.id \}\)/);
+  assert.match(source, /chrome\.sidePanel\.setOptions\(\{ enabled: false \}\)/);
+  assert.match(source, /viewMode === "side-panel"/);
+});
+
 test("popup prioritizes and displays every connection status", () => {
   const elements = new Map();
   const element = id => {
@@ -18,7 +24,7 @@ test("popup prioritizes and displays every connection status", () => {
       onMessage: { addListener(listener) { runtimeListener = listener; } },
       sendMessage: async () => ({})
     },
-    tabs: { query: async () => [], create: async () => {} }
+    tabs: { onActivated: { addListener() {} }, query: async () => [], create: async () => {} }
   };
   vm.runInNewContext(source, {
     chrome,
@@ -73,7 +79,7 @@ test("device tabs switch their associated panels with mouse and keyboard", () =>
 
   const chrome = {
     runtime: { getManifest: () => ({ version: "test" }), onMessage: { addListener() {} }, sendMessage: async () => ({}) },
-    tabs: { query: async () => [], create: async () => {} }
+    tabs: { onActivated: { addListener() {} }, query: async () => [], create: async () => {} }
   };
   vm.runInNewContext(source, {
     chrome,

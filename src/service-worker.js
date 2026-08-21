@@ -1,6 +1,5 @@
 "use strict";
-importScripts("counting.js", "action-controller.js");
-WebRTCMonitorActionController.install();
+importScripts("counting.js");
 const STORAGE_KEY = "tabFrames";
 let statePromise = chrome.storage.session.get(STORAGE_KEY).then(data => data[STORAGE_KEY] || {});
 const save = state => chrome.storage.session.set({ [STORAGE_KEY]: state });

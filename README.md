@@ -7,13 +7,13 @@
 1. Dieses Repository lokal bereitstellen.
 2. In Chrome `chrome://extensions` öffnen und den **Entwicklermodus** aktivieren.
 3. **Entpackte Erweiterung laden** wählen und den Repository-Ordner auswählen.
-4. Eine WebRTC-Seite öffnen und das Erweiterungssymbol anklicken.
+4. Eine WebRTC-Seite öffnen und das Erweiterungssymbol anklicken. Der Monitor öffnet sich zunächst als Popover unter dem Erweiterungssymbol. Über die Schaltfläche oben kann der Nutzer optional in das dauerhaft sichtbare Chrome-Seitenpanel wechseln.
 
 Der Quellstand verwendet eine dreiteilige Basisversion. Der GitHub-Actions-Workflow ergänzt beim Paketieren die jeweilige Run-Nummer als vierte Chrome-Versionskomponente, beispielsweise `1.3.0.42`. Dadurch ist jedes erzeugte Artefakt eindeutig einem Workflow-Lauf zugeordnet.
 
 Nach einem erfolgreichen Push auf `main` veröffentlicht der Workflow einen als Vorabversion gekennzeichneten GitHub Release `main-<Run-Nummer>`. An diesem Release hängen das installierbare ZIP und seine SHA-256-Prüfsumme; der Release verweist auf den zugehörigen Commit aus `main`.
 
-Die Mindestversion ist Chrome 111. Der Grund ist die deklarative Ausführung eines Content Scripts in der `MAIN` World. Beide Content Scripts starten mit `document_start` und in allen Frames. Die verwendeten MV3-Mechanismen sind in der offiziellen Dokumentation zu [Content Scripts und Ausführungswelten](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [`chrome.storage.session`](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session), [Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/messaging) und [`webNavigation`](https://developer.chrome.com/docs/extensions/reference/api/webNavigation) beschrieben.
+Die Mindestversion ist Chrome 114. Der Grund ist das optional dauerhaft sichtbare Chrome-Seitenpanel; außerdem wird ein Content Script deklarativ in der `MAIN` World ausgeführt. Beide Content Scripts starten mit `document_start` und in allen Frames. Die verwendeten MV3-Mechanismen sind in der offiziellen Dokumentation zum [Side Panel](https://developer.chrome.com/docs/extensions/reference/api/sidePanel), zu [Content Scripts und Ausführungswelten](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), [`chrome.storage.session`](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session), [Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/messaging) und [`webNavigation`](https://developer.chrome.com/docs/extensions/reference/api/webNavigation) beschrieben.
 
 ## Angezeigte Werte und genaue Kanaldefinition
 
@@ -37,11 +37,11 @@ Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Si
 1. `src/main-world.js` ersetzt den globalen Konstruktor durch einen transparent weiterleitenden Wrapper. Er beobachtet Erstellung und Zustandsänderungen der Peer Connections. `src/rtp-stats.js` liest deren `connectionState` und regelmäßig die `getStats()`-Reports aus, filtert tatsächlich übertragende RTP-Streams und berechnet die ein- und ausgehende Bitrate. Eine Synchronisierung alle 2,5 Sekunden ergänzt die ereignisbasierten Updates; Messungen überlappen sich dabei nicht.
 2. `src/content-bridge.js` läuft isoliert, validiert Struktur, Version, Herkunftsfenster, Wertebereiche und Summen der Page-World-Nachrichten und leitet nur Zähler weiter.
 3. `src/service-worker.js` hält Werte getrennt nach Tab und Frame, aggregiert sie über `src/counting.js`, unterscheidet Kamera-Videos von Bildschirmfreigaben, aktualisiert das Badge und persistiert den flüchtigen Zustand in `chrome.storage.session`. Navigationen, Frame-Wechsel und geschlossene Tabs bereinigen alte Einträge.
-4. Ein expliziter Action-Controller verarbeitet den Toolbar-Klick und öffnet `popup.html` in einem kleinen Popup-Fenster. Ein weiterer Klick fokussiert das bereits offene Fenster. Das Popup fragt den aktiven Tab ab, hört auf Live-Updates und kann dessen Zustand zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
+4. `popup.html` öffnet sich über den Toolbar-Klick als Popover. Eine Schaltfläche wechselt auf Wunsch in das Chrome-Seitenpanel; dort kann wieder zur Popover-Nutzung zurückgewechselt werden. Das Panel bleibt neben der Webseite sichtbar und wechselt seine Anzeige automatisch mit dem aktiven Tab. Beide Ansichten hören auf Live-Updates und können den Zustand des Tabs zurücksetzen. Die Erweiterung konfiguriert keinerlei eigene Bilder oder Icons und verwendet Chromes Standardsymbol.
 
-Die Geräteliste stammt aus `navigator.mediaDevices.enumerateDevices()`. Chrome gibt über diese Schnittstelle Mikrofone, Lautsprecher und Kameras aus, aber nicht, ob sie intern, per USB oder anders angeschlossen sind. Deshalb zeigt das Popup sämtliche verfügbaren Mediengeräte; ein USB-Gerät ist anhand seiner vom Browser gelieferten Bezeichnung erkennbar. Gerätebezeichnungen können bis zur Medienfreigabe anonym bleiben. Als „in diesem Tab verwendet“ gelten aktive Tracks, die der Tab über `getUserMedia()` erhalten hat. Bildschirmfreigaben gehören nicht zur Liste physischer Geräte.
+Die Geräteliste stammt aus `navigator.mediaDevices.enumerateDevices()`. Chrome gibt über diese Schnittstelle Mikrofone, Lautsprecher und Kameras aus, aber nicht, ob sie intern, per USB oder anders angeschlossen sind. Deshalb zeigt das Seitenpanel sämtliche verfügbaren Mediengeräte; ein USB-Gerät ist anhand seiner vom Browser gelieferten Bezeichnung erkennbar. Gerätebezeichnungen können bis zur Medienfreigabe anonym bleiben. Als „in diesem Tab verwendet“ gelten aktive Tracks, die der Tab über `getUserMedia()` erhalten hat. Bildschirmfreigaben gehören nicht zur Liste physischer Geräte.
 
-`<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
+`<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
 
 ## Datenschutz und Sicherheit
 
@@ -110,21 +110,21 @@ Chrome kann keine GitHub-Artifact-ZIP und keine Release-ZIP direkt als entpackte
 
 ## Erste Anzeige und integrierte Testseite
 
-Nach der Installation müssen bereits geöffnete Webseiten einmal neu geladen werden, weil Chrome neu installierte Content Scripts nicht rückwirkend in vorhandene Dokumente einfügt. Öffne danach das Popup auf einer Seite, die WebRTC verwendet. Eine Peer Connection ohne Tracks erscheint als eine Verbindung mit null Audio- und Videokanälen.
+Nach der Installation müssen bereits geöffnete Webseiten einmal neu geladen werden, weil Chrome neu installierte Content Scripts nicht rückwirkend in vorhandene Dokumente einfügt. Öffne danach das Popover auf einer Seite, die WebRTC verwendet. Eine Peer Connection ohne Tracks erscheint als eine Verbindung mit null Audio- und Videokanälen.
 
-Zum Funktionstest ohne externe Webseite im Popup **Testseite öffnen** wählen. Auf der Testseite kann eine Peer Connection ohne Tracks sowie lokales Audio oder Video erzeugt und wieder geschlossen werden. Es werden keine Kamera- oder Mikrofonberechtigungen angefordert. Nach einem Klick auf eine Testaktion das Erweiterungs-Popup erneut öffnen; Zähler und Badge sollten den neuen Zustand anzeigen.
+Zum Funktionstest ohne externe Webseite im Popover oder Seitenpanel **Testseite öffnen** wählen. Auf der Testseite kann eine Peer Connection ohne Tracks sowie lokales Audio oder Video erzeugt und wieder geschlossen werden. Es werden keine Kamera- oder Mikrofonberechtigungen angefordert. Das geöffnete Seitenpanel und das Badge zeigen den neuen Zustand nach einer Testaktion automatisch an.
 
-### Beim Klick erscheint kein Popup
+### Beim Klick erscheint kein Popover
 
 Das Puzzleteil-Symbol in der Chrome-Symbolleiste ist **das allgemeine Chrome-Menü für Erweiterungen**, nicht das Symbol von WebRTC Live Monitor. Nach dem Laden der Erweiterung:
 
 1. `chrome://extensions` öffnen und prüfen, dass **WebRTC Live Monitor** vorhanden und eingeschaltet ist.
 2. Auf der Erweiterungskarte **Neu laden** klicken, insbesondere nachdem ein neues GitHub-Artefakt entpackt wurde.
 3. In der Symbolleiste auf das Puzzleteil **Erweiterungen** klicken.
-4. Neben **WebRTC Live Monitor** die Stecknadel anklicken. Erst das danach dauerhaft sichtbare Monitor-Symbol öffnet das Popup.
-5. Eine normale Webseite öffnen und neu laden. Auf `chrome://`-Seiten, im Chrome Web Store und auf der Seite `chrome://extensions` darf Chrome die Seiteninstrumentierung nicht ausführen; das Popup selbst sollte sich trotzdem öffnen und null Werte anzeigen.
+4. Neben **WebRTC Live Monitor** die Stecknadel anklicken. Erst das danach dauerhaft sichtbare Symbol öffnet das Popover. Dort kann oben in das Seitenpanel gewechselt werden.
+5. Eine normale Webseite öffnen und neu laden. Auf `chrome://`-Seiten, im Chrome Web Store und auf der Seite `chrome://extensions` darf Chrome die Seiteninstrumentierung nicht ausführen; das Popover selbst sollte sich trotzdem öffnen und null Werte anzeigen.
 
-Falls auch der Eintrag **WebRTC Live Monitor** im Erweiterungsmenü kein Popup öffnet, unter `chrome://extensions` auf der Erweiterungskarte nach einem roten Button **Fehler** suchen. Vor dem erneuten Laden muss das heruntergeladene Artefakt entpackt sein und die ausgewählte Verzeichniswurzel unmittelbar `manifest.json`, `popup.html`, `popup.js` und `popup.css` enthalten. Alte Workflow-Artefakte nicht wiederverwenden; jeder Workflow-Lauf enthält den Stand des jeweiligen Commits und wird später nicht aktualisiert.
+Falls auch der Eintrag **WebRTC Live Monitor** im Erweiterungsmenü kein Popover öffnet, unter `chrome://extensions` auf der Erweiterungskarte nach einem roten Button **Fehler** suchen. Vor dem erneuten Laden muss das heruntergeladene Artefakt entpackt sein und die ausgewählte Verzeichniswurzel unmittelbar `manifest.json`, `popup.html`, `popup.js` und `popup.css` enthalten. Alte Workflow-Artefakte nicht wiederverwenden; jeder Workflow-Lauf enthält den Stand des jeweiligen Commits und wird später nicht aktualisiert.
 
 ### Meldung „Extension context invalidated“ nach „Neu laden“
 
@@ -132,4 +132,4 @@ Beim Neuladen einer Erweiterung invalidiert Chrome deren bereits in offenen Tabs
 
 ### Mehrere entpackte Versionen unterscheiden
 
-Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Eintrag neu an. Das Popup zeigt die installierte Manifestversion am unteren Rand an. Die Erweiterung verwendet bewusst ausschließlich Chromes Standardsymbol; dadurch gibt es weder Bilddateien noch eine Icon-Erzeugung, die den Service Worker beeinflussen könnte.
+Wenn verschiedene Workflow-Artefakte in unterschiedliche Download-Ordner entpackt und jeweils über **Entpackte Erweiterung laden** hinzugefügt wurden, können mehrere Installationen nebeneinander existieren. Entferne unter `chrome://extensions` alle älteren Einträge von **WebRTC Live Monitor**, lade nur den Ordner des neuesten Artefakts und hefte anschließend dessen Eintrag neu an. Das Seitenpanel zeigt die installierte Manifestversion am unteren Rand an. Die Erweiterung verwendet bewusst ausschließlich Chromes Standardsymbol; dadurch gibt es weder Bilddateien noch eine Icon-Erzeugung, die den Service Worker beeinflussen könnte.
