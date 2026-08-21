@@ -15,6 +15,9 @@
   "background": {
     "service_worker": "src/service-worker.js"
   },
+   "icons": {
+    "128": "icon/webrtc-live-monitor-icon-128(1).png"
+  },
   "action": {
     "default_title": "WebRTC Live Monitor",
     "default_popup": "popup.html"
