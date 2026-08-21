@@ -97,7 +97,10 @@ const repositoryBinaryFiles = repositoryFiles.filter(file =>
   binaryExtensions.has(path.extname(file).toLowerCase())
 );
 
-assert.deepEqual(repositoryBinaryFiles, []);
+assert.ok(
+  repositoryBinaryFiles.includes(icon128),
+  `Die Icon-Datei wird nicht von Git erfasst: ${icon128}`
+);
 
 const workerSource = fs.readFileSync(
   "src/service-worker.js",
