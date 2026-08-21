@@ -3,6 +3,37 @@ let activeTabId;
 const byId = id => document.getElementById(id);
 const CONNECTION_STATES = ["new", "connecting", "connected", "disconnected", "failed"];
 byId("version").textContent = chrome.runtime.getManifest().version;
+
+class DevicesTabsController {
+  constructor(tabIds) {
+    this.tabs = tabIds.map(byId);
+    for (const tab of this.tabs) {
+      tab.addEventListener("click", () => this.select(tab));
+      tab.addEventListener("keydown", event => this.handleKeydown(event));
+    }
+  }
+
+  select(selectedTab, { focus = false } = {}) {
+    for (const tab of this.tabs) {
+      const isSelected = tab === selectedTab;
+      tab.setAttribute("aria-selected", String(isSelected));
+      tab.tabIndex = isSelected ? 0 : -1;
+      byId(tab.getAttribute("aria-controls")).hidden = !isSelected;
+    }
+    if (focus) selectedTab.focus();
+  }
+
+  handleKeydown(event) {
+    const currentIndex = this.tabs.indexOf(event.currentTarget);
+    const direction = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+    if (!direction) return;
+    event.preventDefault();
+    const nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length;
+    this.select(this.tabs[nextIndex], { focus: true });
+  }
+}
+
+new DevicesTabsController(["used-devices-tab", "available-devices-tab"]);
 function render(c) {
   byId("peers").textContent = c.peers;
   for (const state of CONNECTION_STATES) byId(`state-${state}`).textContent = c.connectionStates[state];
