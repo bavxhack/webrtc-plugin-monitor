@@ -18,7 +18,7 @@ test("popup prioritizes and displays every connection status", () => {
       onMessage: { addListener(listener) { runtimeListener = listener; } },
       sendMessage: async () => ({})
     },
-    tabs: { query: async () => [], create: async () => {} }
+    tabs: { onActivated: { addListener() {} }, query: async () => [], create: async () => {} }
   };
   vm.runInNewContext(source, {
     chrome,
@@ -73,7 +73,7 @@ test("device tabs switch their associated panels with mouse and keyboard", () =>
 
   const chrome = {
     runtime: { getManifest: () => ({ version: "test" }), onMessage: { addListener() {} }, sendMessage: async () => ({}) },
-    tabs: { query: async () => [], create: async () => {} }
+    tabs: { onActivated: { addListener() {} }, query: async () => [], create: async () => {} }
   };
   vm.runInNewContext(source, {
     chrome,

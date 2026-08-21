@@ -1,6 +1,8 @@
 "use strict";
 importScripts("counting.js", "action-controller.js");
-WebRTCMonitorActionController.install();
+WebRTCMonitorActionController.install().catch(error => {
+  console.error("WebRTC Live Monitor: configuring the side panel failed.", error);
+});
 const STORAGE_KEY = "tabFrames";
 let statePromise = chrome.storage.session.get(STORAGE_KEY).then(data => data[STORAGE_KEY] || {});
 const save = state => chrome.storage.session.set({ [STORAGE_KEY]: state });

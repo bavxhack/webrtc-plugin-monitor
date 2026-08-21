@@ -16,10 +16,11 @@ assert.equal(
 
 assert.equal(manifest.action.default_popup, undefined);
 assert(fs.existsSync("popup.html"));
+assert.equal(manifest.side_panel.default_path, "popup.html");
 
 assert.deepEqual(
   new Set(manifest.permissions),
-  new Set(["storage", "webNavigation"])
+  new Set(["sidePanel", "storage", "webNavigation"])
 );
 
 for (const entry of manifest.content_scripts) {
@@ -47,33 +48,7 @@ for (const file of javascriptFiles) {
 }
 
 assert.equal(manifest.action.default_icon, undefined);
-
-/*
- * Prüfen, ob im Manifest ein Icon der Größe 128
- * eingetragen ist und die angegebene Datei existiert.
- */
-assert.ok(
-  manifest.icons,
-  "Im Manifest fehlt das icons-Objekt."
-);
-
-assert.ok(
-  Object.prototype.hasOwnProperty.call(manifest.icons, "128"),
-  'Im Manifest fehlt das Icon mit der Größe "128".'
-);
-
-const icon128 = manifest.icons["128"];
-
-assert.equal(
-  typeof icon128,
-  "string",
-  'Der Wert von manifest.icons["128"] muss ein Dateipfad sein.'
-);
-
-assert.ok(
-  fs.existsSync(icon128),
-  `Die Icon-Datei existiert nicht: ${icon128}`
-);
+assert.equal(manifest.icons, undefined);
 
 /*
  * Prüfen, ob das im Manifest angegebene Icon von Git erfasst wird.
@@ -102,10 +77,7 @@ const repositoryBinaryFiles = repositoryFiles.filter(file =>
   binaryExtensions.has(path.extname(file).toLowerCase())
 );
 
-assert.ok(
-  repositoryBinaryFiles.includes(icon128),
-  `Die Icon-Datei wird nicht von Git erfasst: ${icon128}`
-);
+assert.deepEqual(repositoryBinaryFiles, []);
 
 const workerSource = fs.readFileSync(
   "src/service-worker.js",
@@ -148,5 +120,5 @@ assert.match(
 );
 
 console.log(
-  "Manifest, 128px icon, toolbar click controller, JavaScript syntax, permissions and assets are valid."
+  "Manifest, side panel controller, JavaScript syntax, permissions and assets are valid."
 );

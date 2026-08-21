@@ -12,7 +12,7 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; width: 380px; min-width: 300px; background: linear-gradient(180deg, #e8f6f1 0, #f6f9f8 260px); }
+body { margin: 0; min-width: 300px; background: linear-gradient(180deg, #e8f6f1 0, #f6f9f8 260px); }
 main { padding: 18px; }
 h1, h2, p { margin: 0; }
 h1 { max-width: 290px; font-size: 17px; line-height: 1.25; letter-spacing: -.02em; overflow-wrap: anywhere; }

@@ -129,9 +129,14 @@ chrome.runtime.onMessage.addListener(message => {
     renderDevices(message.devices);
   }
 });
+chrome.tabs.onActivated.addListener(() => {
+  refresh().catch(error => {
+    byId("status").textContent = "Tab konnte nicht aktualisiert werden";
+    byId("help").textContent = error.message;
+  });
+});
 byId("demo").addEventListener("click", async () => {
   await chrome.tabs.create({ url: chrome.runtime.getURL("demo.html") });
-  window.close();
 });
 byId("reset").addEventListener("click", async () => {
   if (Number.isInteger(activeTabId)) await chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "RESET_TAB", tabId: activeTabId });

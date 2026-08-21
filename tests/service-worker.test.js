@@ -33,7 +33,7 @@ test("startup removes stale state when its tab no longer exists", async () => {
     },
     tabs: { onRemoved: { addListener() {} } },
     webNavigation: { onCommitted: { addListener() {} } },
-    windows: { onRemoved: { addListener() {} } }
+    sidePanel: { setPanelBehavior: async () => {} }
   };
 
   const context = vm.createContext({
@@ -44,7 +44,7 @@ test("startup removes stale state when its tab no longer exists", async () => {
     Promise,
     structuredClone,
     URL,
-    WebRTCMonitorActionController: { install() {} },
+    WebRTCMonitorActionController: { install: async () => {} },
     WebRTCMonitorCounting: counting
   });
   vm.runInContext(fs.readFileSync("src/service-worker.js", "utf8"), context, { filename: "src/service-worker.js" });
