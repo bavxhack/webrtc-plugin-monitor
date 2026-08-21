@@ -25,13 +25,22 @@ async function tabCounts(tabId) {
 }
 function normalizeDevices(devices) {
   const normalize = list => Array.isArray(list) ? list.map(({ kind, label }) => ({ kind, label })).slice(0, 100) : [];
-  return { available: normalize(devices?.available), used: normalize(devices?.used) };
+  const states = new Set(["granted", "prompt", "denied", "unknown"]);
+  const access = Object.fromEntries(["microphone", "camera"].map(permission => [
+    permission,
+    states.has(devices?.access?.[permission]) ? devices.access[permission] : "unknown"
+  ]));
+  return { access, available: normalize(devices?.available), used: normalize(devices?.used) };
 }
 async function tabDevices(tabId) {
   const state = await statePromise;
   const frames = Object.values(state[String(tabId)] || {});
   const unique = list => [...new Map(list.map(device => [`${device.kind}\0${device.label}`, device])).values()];
   return {
+    access: {
+      microphone: frames.some(frame => frame.devices?.access?.microphone === "granted") ? "granted" : frames[0]?.devices?.access?.microphone || "unknown",
+      camera: frames.some(frame => frame.devices?.access?.camera === "granted") ? "granted" : frames[0]?.devices?.access?.camera || "unknown"
+    },
     available: unique(frames.flatMap(frame => frame.devices?.available || [])),
     used: unique(frames.flatMap(frame => frame.devices?.used || []))
   };
@@ -57,7 +66,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "GET_TAB") {
       Promise.all([tabCounts(message.tabId), tabDevices(message.tabId)])
         .then(([counts, devices]) => sendResponse({ counts, devices }))
-        .catch(() => sendResponse({ counts: WebRTCMonitorCounting.emptyCounts(), devices: { available: [], used: [] } }));
+        .catch(() => sendResponse({ counts: WebRTCMonitorCounting.emptyCounts(), devices: { access: { microphone: "unknown", camera: "unknown" }, available: [], used: [] } }));
     } else {
       mutate(state => { delete state[String(message.tabId)]; })
         .then(() => publish(message.tabId))

@@ -47,13 +47,21 @@
         kind: device.kind,
         label: device.label
       }));
+      const access = {};
+      for (const permission of ["microphone", "camera"]) {
+        try {
+          access[permission] = (await window.navigator.permissions?.query({ name: permission }))?.state || "unknown";
+        } catch {
+          access[permission] = "unknown";
+        }
+      }
       const used = [...localDeviceTracks]
         .filter(track => track.readyState !== "ended")
         .map(track => ({
           kind: track.kind === "audio" ? "audioinput" : "videoinput",
           label: track.label || ""
         }));
-      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used } }, "*");
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { access, available, used } }, "*");
     } catch {
       // Device enumeration can be denied by a document's Permissions Policy.
     }
@@ -119,10 +127,13 @@
       configurable: true,
       writable: true,
       value: async function (...args) {
-        const stream = await Reflect.apply(nativeGetUserMedia, this, args);
-        for (const track of stream.getTracks()) observeLocalDeviceTrack(track);
-        await emitDevices();
-        return stream;
+        try {
+          const stream = await Reflect.apply(nativeGetUserMedia, this, args);
+          for (const track of stream.getTracks()) observeLocalDeviceTrack(track);
+          return stream;
+        } finally {
+          await emitDevices();
+        }
       }
     });
   }

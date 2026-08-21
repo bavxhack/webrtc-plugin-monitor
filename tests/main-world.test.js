@@ -76,7 +76,7 @@ test("reports available devices and tracks used through getUserMedia", async () 
     async getUserMedia() { return { getTracks: () => [track] }; }
   };
   const window = {
-    navigator: { mediaDevices },
+    navigator: { mediaDevices, permissions: { async query({ name }) { return { state: name === "microphone" ? "granted" : "prompt" }; } } },
     addEventListener() {},
     postMessage(message) { messages.push(message); }
   };
@@ -97,6 +97,7 @@ test("reports available devices and tracks used through getUserMedia", async () 
 
   const deviceMessages = messages.filter(message => message.type === "DEVICES");
   assert.deepEqual(structuredClone(deviceMessages.at(-1).devices), {
+    access: { camera: "prompt", microphone: "granted" },
     available: [{ kind: "audioinput", label: "USB microphone" }],
     used: [{ kind: "audioinput", label: "USB microphone" }]
   });

@@ -58,11 +58,18 @@ dd small { color: #8490a2; font-size: 10px; font-weight: 600; white-space: nowra
 .total { margin-top: 4px; padding-top: 8px !important; border-top: 1px solid var(--line); }
 
 .devices h3 { margin: 10px 0 5px; color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.device-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 10px; padding: 3px; border-radius: 10px; background: #e8efed; }
+.device-tabs button { min-height: 30px; padding: 5px; border-radius: 8px; color: var(--muted); background: transparent; font-size: 10px; }
+.device-tabs button[aria-selected="true"] { color: var(--navy); background: var(--surface); box-shadow: 0 2px 7px #14233d14; }
+.device-tab-panel[hidden] { display: none; }
 .devices ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .devices li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 7px; padding: 7px 8px; border-radius: 9px; background: #f4f8f7; }
 .devices li span { color: var(--mint-dark); font-size: 10px; font-weight: 800; }
 .devices li strong { min-width: 0; font-size: 11px; overflow-wrap: anywhere; }
 .devices li.empty { display: block; color: var(--muted); font-size: 11px; }
+.devices li.permission-granted span { color: var(--mint-dark); }
+.devices li.permission-denied span { color: #bd4053; }
+.devices li.permission-prompt span, .devices li.permission-unknown span { color: var(--muted); }
 .device-note { margin-top: 9px; color: var(--muted); font-size: 9px; }
 
 .help { margin: 12px 2px; color: var(--muted); font-size: 11px; text-align: center; }

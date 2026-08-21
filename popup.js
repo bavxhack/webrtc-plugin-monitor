@@ -42,6 +42,64 @@ function renderDevices(devices = { available: [], used: [] }) {
   };
   renderList("used-devices", devices.used || [], "Keine Geräte verwendet");
   renderList("available-devices", devices.available || [], "Keine Geräte erkannt");
+  const accessList = byId("device-access");
+  accessList.replaceChildren();
+  const accessLabels = { microphone: "Mikrofon", camera: "Kamera" };
+  const stateLabels = { granted: "Zugriff erlaubt", prompt: "Noch nicht angefragt", denied: "Zugriff blockiert", unknown: "Status nicht verfügbar" };
+  for (const permission of ["microphone", "camera"]) {
+    const state = devices.access?.[permission] || "unknown";
+    const item = document.createElement("li");
+    item.className = `permission-${state}`;
+    const kind = document.createElement("span");
+    const status = document.createElement("strong");
+    kind.textContent = accessLabels[permission];
+    status.textContent = stateLabels[state];
+    item.append(kind, status);
+    accessList.append(item);
+  }
+}
+
+function installDeviceTabs() {
+  const section = document.querySelector(".devices");
+  if (!section) return;
+  const usedHeading = byId("used-devices").previousElementSibling;
+  const availableHeading = byId("available-devices").previousElementSibling;
+  const tabs = document.createElement("div");
+  tabs.className = "device-tabs";
+  tabs.setAttribute("role", "tablist");
+  const panels = [
+    { id: "access", label: "Zugriff", list: document.createElement("ul") },
+    { id: "used", label: "Verwendet", list: byId("used-devices") },
+    { id: "available", label: "Verfügbar", list: byId("available-devices") }
+  ];
+  panels[0].list.id = "device-access";
+  for (const [index, panel] of panels.entries()) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = `device-tab-${panel.id}`;
+    button.textContent = panel.label;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-controls", `device-panel-${panel.id}`);
+    const container = document.createElement("div");
+    container.id = `device-panel-${panel.id}`;
+    container.className = "device-tab-panel";
+    container.setAttribute("role", "tabpanel");
+    container.setAttribute("aria-labelledby", button.id);
+    container.append(panel.list);
+    const select = () => panels.forEach((candidate, candidateIndex) => {
+      const selected = candidateIndex === index;
+      tabs.children[candidateIndex].setAttribute("aria-selected", String(selected));
+      tabs.children[candidateIndex].tabIndex = selected ? 0 : -1;
+      section.querySelector(`#device-panel-${candidate.id}`).hidden = !selected;
+    });
+    button.addEventListener("click", select);
+    tabs.append(button);
+    section.insertBefore(container, section.querySelector(".device-note"));
+    if (index === 0) queueMicrotask(select);
+  }
+  usedHeading.remove();
+  availableHeading.remove();
+  section.querySelector(".section-heading").after(tabs);
 }
 function connectionStatus(c) {
   if (c.connectionStates.connected > 0) return { text: "WebRTC verbunden", className: "connected" };
@@ -74,6 +132,7 @@ chrome.runtime.onMessage.addListener(message => {
     renderDevices(message.devices);
   }
 });
+installDeviceTabs();
 byId("demo").addEventListener("click", async () => {
   await chrome.tabs.create({ url: chrome.runtime.getURL("demo.html") });
   window.close();
