@@ -53,7 +53,16 @@
           kind: track.kind === "audio" ? "audioinput" : "videoinput",
           label: track.label || ""
         }));
-      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used } }, "*");
+      const permissionNames = { audioinput: "microphone", videoinput: "camera", audiooutput: "speaker-selection" };
+      const permissions = {};
+      await Promise.all(Object.entries(permissionNames).map(async ([kind, name]) => {
+        try {
+          permissions[kind] = (await window.navigator.permissions.query({ name })).state;
+        } catch {
+          permissions[kind] = "unavailable";
+        }
+      }));
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used, permissions } }, "*");
     } catch {
       // Device enumeration can be denied by a document's Permissions Policy.
     }

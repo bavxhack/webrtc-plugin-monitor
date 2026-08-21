@@ -47,37 +47,8 @@ for (const file of javascriptFiles) {
 }
 
 assert.equal(manifest.action.default_icon, undefined);
+assert.equal(manifest.icons, undefined);
 
-/*
- * Prüfen, ob im Manifest ein Icon der Größe 128
- * eingetragen ist und die angegebene Datei existiert.
- */
-assert.ok(
-  manifest.icons,
-  "Im Manifest fehlt das icons-Objekt."
-);
-
-assert.ok(
-  Object.prototype.hasOwnProperty.call(manifest.icons, "128"),
-  'Im Manifest fehlt das Icon mit der Größe "128".'
-);
-
-const icon128 = manifest.icons["128"];
-
-assert.equal(
-  typeof icon128,
-  "string",
-  'Der Wert von manifest.icons["128"] muss ein Dateipfad sein.'
-);
-
-assert.ok(
-  fs.existsSync(icon128),
-  `Die Icon-Datei existiert nicht: ${icon128}`
-);
-
-/*
- * Prüfen, ob das im Manifest angegebene Icon von Git erfasst wird.
- */
 const binaryExtensions = new Set([
   ".png",
   ".jpg",
@@ -99,13 +70,10 @@ const repositoryFiles = execFileSync(
   .filter(Boolean);
 
 const repositoryBinaryFiles = repositoryFiles.filter(file =>
-  binaryExtensions.has(path.extname(file).toLowerCase())
+  fs.existsSync(file) && binaryExtensions.has(path.extname(file).toLowerCase())
 );
 
-assert.ok(
-  repositoryBinaryFiles.includes(icon128),
-  `Die Icon-Datei wird nicht von Git erfasst: ${icon128}`
-);
+assert.deepEqual(repositoryBinaryFiles, [], "Binärdateien werden vom Veröffentlichungsprozess nicht unterstützt.");
 
 const workerSource = fs.readFileSync(
   "src/service-worker.js",
@@ -148,5 +116,5 @@ assert.match(
 );
 
 console.log(
-  "Manifest, 128px icon, toolbar click controller, JavaScript syntax, permissions and assets are valid."
+  "Manifest, default extension icon, toolbar click controller, JavaScript syntax, permissions and assets are valid."
 );

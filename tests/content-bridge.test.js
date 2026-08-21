@@ -68,9 +68,11 @@ test("valid device inventories are forwarded and malformed entries are rejected"
     data: { source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices }
   });
 
-  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }] });
-  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [] });
+  const permissions = { audioinput: "granted", audiooutput: "prompt", videoinput: "denied" };
+  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }], permissions });
+  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [], permissions });
 
   assert.deepEqual(messages.map(message => message.type), ["FRAME_READY", "FRAME_DEVICES"]);
   assert.deepEqual(messages[1].devices.used, [{ kind: "videoinput", label: "USB camera" }]);
+  assert.deepEqual(messages[1].devices.permissions, permissions);
 });

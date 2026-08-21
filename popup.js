@@ -18,30 +18,64 @@ function render(c) {
   byId("pulse").className = status.className;
   byId("updated").textContent = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date());
 }
-function renderDevices(devices = { available: [], used: [] }) {
-  const labels = { audioinput: "Mikrofon", audiooutput: "Lautsprecher", videoinput: "Kamera" };
-  const renderList = (id, list, emptyText) => {
-    const target = byId(id);
+const DEVICE_KINDS = ["audioinput", "videoinput", "audiooutput"];
+const EMPTY_DEVICE_LABELS = { audioinput: "Keine Mikrofone erkannt", audiooutput: "Keine Ausgabegeräte erkannt", videoinput: "Keine Kameras erkannt" };
+function renderDevices(devices = { available: [], used: [], permissions: {} }) {
+  for (const deviceKind of DEVICE_KINDS) {
+    const available = (devices.available || []).filter(device => device.kind === deviceKind);
+    const usedLabels = new Set((devices.used || []).filter(device => device.kind === deviceKind).map(device => device.label));
+    const target = byId(`devices-${deviceKind}`);
     target.replaceChildren();
-    if (!list.length) {
+    byId(`count-${deviceKind}`).textContent = available.length;
+    const permission = devices.permissions?.[deviceKind] || "unavailable";
+    const access = byId(`access-${deviceKind}`);
+    const accessLabels = {
+      granted: "Zugriff erlaubt",
+      denied: "Zugriff blockiert",
+      prompt: "Zugriff noch nicht angefragt",
+      unavailable: "Berechtigungsstatus nicht verfügbar"
+    };
+    access.className = `access-state ${permission}`;
+    access.textContent = accessLabels[permission] || accessLabels.unavailable;
+    if (!available.length) {
       const item = document.createElement("li");
       item.className = "empty";
-      item.textContent = emptyText;
+      item.textContent = EMPTY_DEVICE_LABELS[deviceKind];
       target.append(item);
-      return;
+      continue;
     }
-    for (const device of list) {
+    for (const device of available) {
       const item = document.createElement("li");
-      const kind = document.createElement("span");
       const name = document.createElement("strong");
-      kind.textContent = labels[device.kind] || "Gerät";
+      const state = document.createElement("span");
       name.textContent = device.label || "Bezeichnung erst nach Freigabe sichtbar";
-      item.append(kind, name);
+      const inUse = usedLabels.has(device.label) && device.label !== "";
+      state.className = inUse ? "device-use active" : "device-use";
+      state.textContent = inUse ? "Gerade verwendet" : permission === "granted" ? "Zugriff möglich" : "Nicht freigegeben";
+      item.append(name, state);
       target.append(item);
     }
-  };
-  renderList("used-devices", devices.used || [], "Keine Geräte verwendet");
-  renderList("available-devices", devices.available || [], "Keine Geräte erkannt");
+  }
+}
+function activateDeviceTab(tab) {
+  for (const candidate of document.querySelectorAll(".device-tab")) {
+    const active = candidate === tab;
+    candidate.classList.toggle("active", active);
+    candidate.setAttribute("aria-selected", String(active));
+    candidate.tabIndex = active ? 0 : -1;
+    byId(`panel-${candidate.dataset.deviceKind}`).hidden = !active;
+  }
+}
+for (const tab of document.querySelectorAll(".device-tab")) {
+  tab.addEventListener("click", () => activateDeviceTab(tab));
+  tab.addEventListener("keydown", event => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    const tabs = [...document.querySelectorAll(".device-tab")];
+    const offset = event.key === "ArrowRight" ? 1 : -1;
+    const next = tabs[(tabs.indexOf(tab) + offset + tabs.length) % tabs.length];
+    activateDeviceTab(next);
+    next.focus();
+  });
 }
 function connectionStatus(c) {
   if (c.connectionStates.connected > 0) return { text: "WebRTC verbunden", className: "connected" };

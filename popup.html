@@ -59,12 +59,16 @@
     </section>
 
     <section class="panel devices" aria-labelledby="devices-title">
-      <div class="section-heading"><div><p class="eyebrow">Hardware</p><h2 id="devices-title">USB- und Mediengeräte</h2></div></div>
-      <h3>In diesem Tab verwendet</h3>
-      <ul id="used-devices"><li class="empty">Keine Geräte verwendet</li></ul>
-      <h3>Verfügbar</h3>
-      <ul id="available-devices"><li class="empty">Keine Geräte erkannt</li></ul>
-      <p class="device-note">Der Browser zeigt den Anschlusstyp nicht an. USB-Geräte sind deshalb zusammen mit allen verfügbaren Audio- und Videogeräten aufgeführt.</p>
+      <div class="section-heading"><div><p class="eyebrow">Seitenzugriff</p><h2 id="devices-title">Geräte der aktuellen Seite</h2></div></div>
+      <div class="device-tabs" role="tablist" aria-label="Gerätearten">
+        <button id="tab-audioinput" class="device-tab active" type="button" role="tab" aria-selected="true" aria-controls="panel-audioinput" data-device-kind="audioinput">Mikrofone <span id="count-audioinput">0</span></button>
+        <button id="tab-videoinput" class="device-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-videoinput" data-device-kind="videoinput" tabindex="-1">Kameras <span id="count-videoinput">0</span></button>
+        <button id="tab-audiooutput" class="device-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-audiooutput" data-device-kind="audiooutput" tabindex="-1">Ausgabe <span id="count-audiooutput">0</span></button>
+      </div>
+      <div id="panel-audioinput" class="device-panel" role="tabpanel" aria-labelledby="tab-audioinput"><p id="access-audioinput" class="access-state"></p><ul id="devices-audioinput"></ul></div>
+      <div id="panel-videoinput" class="device-panel" role="tabpanel" aria-labelledby="tab-videoinput" hidden><p id="access-videoinput" class="access-state"></p><ul id="devices-videoinput"></ul></div>
+      <div id="panel-audiooutput" class="device-panel" role="tabpanel" aria-labelledby="tab-audiooutput" hidden><p id="access-audiooutput" class="access-state"></p><ul id="devices-audiooutput"></ul></div>
+      <p class="device-note">Gerätenamen werden erst sichtbar, wenn die Seite die entsprechende Freigabe erhalten hat. Der Anschlusstyp (z. B. USB) wird vom Browser nicht zuverlässig bereitgestellt.</p>
     </section>
 
     <p id="help" class="help">Nach der Installation vorhandene Webseiten einmal neu laden.</p>

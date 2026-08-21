@@ -25,7 +25,7 @@ async function tabCounts(tabId) {
 }
 function normalizeDevices(devices) {
   const normalize = list => Array.isArray(list) ? list.map(({ kind, label }) => ({ kind, label })).slice(0, 100) : [];
-  return { available: normalize(devices?.available), used: normalize(devices?.used) };
+  return { available: normalize(devices?.available), used: normalize(devices?.used), permissions: { ...devices?.permissions } };
 }
 async function tabDevices(tabId) {
   const state = await statePromise;
@@ -33,7 +33,11 @@ async function tabDevices(tabId) {
   const unique = list => [...new Map(list.map(device => [`${device.kind}\0${device.label}`, device])).values()];
   return {
     available: unique(frames.flatMap(frame => frame.devices?.available || [])),
-    used: unique(frames.flatMap(frame => frame.devices?.used || []))
+    used: unique(frames.flatMap(frame => frame.devices?.used || [])),
+    permissions: Object.fromEntries(["audioinput", "videoinput", "audiooutput"].map(kind => {
+      const states = frames.map(frame => frame.devices?.permissions?.[kind]).filter(Boolean);
+      return [kind, states.includes("granted") ? "granted" : states.includes("denied") ? "denied" : states.includes("prompt") ? "prompt" : "unavailable"];
+    }))
   };
 }
 async function publish(tabId) {
@@ -57,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "GET_TAB") {
       Promise.all([tabCounts(message.tabId), tabDevices(message.tabId)])
         .then(([counts, devices]) => sendResponse({ counts, devices }))
-        .catch(() => sendResponse({ counts: WebRTCMonitorCounting.emptyCounts(), devices: { available: [], used: [] } }));
+        .catch(() => sendResponse({ counts: WebRTCMonitorCounting.emptyCounts(), devices: { available: [], used: [], permissions: {} } }));
     } else {
       mutate(state => { delete state[String(message.tabId)]; })
         .then(() => publish(message.tabId))

@@ -23,7 +23,7 @@ test("popup prioritizes and displays every connection status", () => {
   vm.runInNewContext(source, {
     chrome,
     Date,
-    document: { createElement: () => ({ append() {}, className: "", textContent: "" }), getElementById: element },
+    document: { createElement: () => ({ append() {}, className: "", textContent: "" }), getElementById: element, querySelectorAll: () => [] },
     Intl,
     location: { search: "" },
     URLSearchParams,

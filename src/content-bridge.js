@@ -27,7 +27,9 @@
     const validList = list => Array.isArray(list) && list.length <= 100 && list.every(device =>
       device && ["audioinput", "audiooutput", "videoinput"].includes(device.kind) &&
       typeof device.label === "string" && device.label.length <= 500);
-    return devices && validList(devices.available) && validList(devices.used);
+    const validPermissions = devices?.permissions && ["audioinput", "audiooutput", "videoinput"].every(kind =>
+      ["granted", "denied", "prompt", "unavailable"].includes(devices.permissions[kind]));
+    return devices && validList(devices.available) && validList(devices.used) && validPermissions;
   }
   window.addEventListener("message", event => {
     if (event.source !== window || !event.data || event.data.source !== "webrtc-live-monitor" || event.data.version !== 2) return;
