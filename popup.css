@@ -57,7 +57,11 @@ dd { display: flex; align-items: baseline; gap: 7px; margin: 0; color: var(--nav
 dd small { color: #8490a2; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .total { margin-top: 4px; padding-top: 8px !important; border-top: 1px solid var(--line); }
 
-.devices h3 { margin: 10px 0 5px; color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.device-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 9px; padding: 4px; border-radius: 11px; background: #edf3f1; }
+.device-tab { min-height: 32px; padding: 6px 10px; border-radius: 8px; color: var(--muted); background: transparent; font-size: 11px; }
+.device-tab:hover { color: var(--navy); background: #ffffff99; transform: none; }
+.device-tab[aria-selected="true"] { color: var(--navy); background: var(--surface); box-shadow: 0 2px 7px #14233d12; }
+.device-tab-panel[hidden] { display: none; }
 .devices ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .devices li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 7px; padding: 7px 8px; border-radius: 9px; background: #f4f8f7; }
 .devices li span { color: var(--mint-dark); font-size: 10px; font-weight: 800; }

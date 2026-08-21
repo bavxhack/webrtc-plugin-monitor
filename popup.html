@@ -60,10 +60,16 @@
 
     <section class="panel devices" aria-labelledby="devices-title">
       <div class="section-heading"><div><p class="eyebrow">Hardware</p><h2 id="devices-title">USB- und Mediengeräte</h2></div></div>
-      <h3>In diesem Tab verwendet</h3>
-      <ul id="used-devices"><li class="empty">Keine Geräte verwendet</li></ul>
-      <h3>Verfügbar</h3>
-      <ul id="available-devices"><li class="empty">Keine Geräte erkannt</li></ul>
+      <div class="device-tabs" role="tablist" aria-label="Geräteansicht">
+        <button id="used-devices-tab" class="device-tab" type="button" role="tab" aria-selected="true" aria-controls="used-devices-panel">Verwendet</button>
+        <button id="available-devices-tab" class="device-tab" type="button" role="tab" aria-selected="false" aria-controls="available-devices-panel" tabindex="-1">Verfügbar</button>
+      </div>
+      <div id="used-devices-panel" class="device-tab-panel" role="tabpanel" aria-labelledby="used-devices-tab">
+        <ul id="used-devices"><li class="empty">Keine Geräte verwendet</li></ul>
+      </div>
+      <div id="available-devices-panel" class="device-tab-panel" role="tabpanel" aria-labelledby="available-devices-tab" hidden>
+        <ul id="available-devices"><li class="empty">Keine Geräte erkannt</li></ul>
+      </div>
       <p class="device-note">Der Browser zeigt den Anschlusstyp nicht an. USB-Geräte sind deshalb zusammen mit allen verfügbaren Audio- und Videogeräten aufgeführt.</p>
     </section>
 
