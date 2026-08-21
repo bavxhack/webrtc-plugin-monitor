@@ -29,6 +29,20 @@ test("calculates inbound and outbound bitrate from consecutive stats", async () 
   assert.equal(result.video.outboundBitrate, 32000);
 });
 
+test("calculates video bitrate when the browser omits packet counters", async () => {
+  const pc = peer([
+    [{ id: "video", type: "outbound-rtp", kind: "video", bytesSent: 2000, timestamp: 1000 }],
+    [{ id: "video", type: "outbound-rtp", kind: "video", bytesSent: 7000, timestamp: 2000 }]
+  ]);
+  const previous = new WeakMap();
+
+  await countPeerConnections(new Set([pc]), previous);
+  const counts = await countPeerConnections(new Set([pc]), previous);
+
+  assert.equal(counts.video.outbound, 1);
+  assert.equal(counts.video.outboundBitrate, 40000);
+});
+
 test("tracks every supported connection-state transition and excludes closed peers", async () => {
   const pc = peer([[], [], [], [], [], [], []]);
   const transitions = ["connected", "disconnected", "connected", "connecting", "failed", "new", "closed"];

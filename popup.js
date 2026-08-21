@@ -73,6 +73,16 @@ function installDeviceTabs() {
     { id: "available", label: "Verfügbar", list: byId("available-devices") }
   ];
   panels[0].list.id = "device-access";
+  const buttons = [];
+  const containers = [];
+  const select = selectedIndex => {
+    for (const [index, button] of buttons.entries()) {
+      const selected = index === selectedIndex;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      containers[index].hidden = !selected;
+    }
+  };
   for (const [index, panel] of panels.entries()) {
     const button = document.createElement("button");
     button.type = "button";
@@ -86,20 +96,24 @@ function installDeviceTabs() {
     container.setAttribute("role", "tabpanel");
     container.setAttribute("aria-labelledby", button.id);
     container.append(panel.list);
-    const select = () => panels.forEach((candidate, candidateIndex) => {
-      const selected = candidateIndex === index;
-      tabs.children[candidateIndex].setAttribute("aria-selected", String(selected));
-      tabs.children[candidateIndex].tabIndex = selected ? 0 : -1;
-      section.querySelector(`#device-panel-${candidate.id}`).hidden = !selected;
+    button.addEventListener("click", () => select(index));
+    button.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      const offset = event.key === "ArrowRight" ? 1 : -1;
+      const nextIndex = (index + offset + panels.length) % panels.length;
+      select(nextIndex);
+      buttons[nextIndex].focus();
     });
-    button.addEventListener("click", select);
+    buttons.push(button);
+    containers.push(container);
     tabs.append(button);
     section.insertBefore(container, section.querySelector(".device-note"));
-    if (index === 0) queueMicrotask(select);
   }
   usedHeading.remove();
   availableHeading.remove();
   section.querySelector(".section-heading").after(tabs);
+  select(0);
 }
 function connectionStatus(c) {
   if (c.connectionStates.connected > 0) return { text: "WebRTC verbunden", className: "connected" };

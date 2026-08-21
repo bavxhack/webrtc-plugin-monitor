@@ -33,7 +33,8 @@
         const bytes = direction === "inbound" ? report.bytesReceived : report.bytesSent;
         const packets = direction === "inbound" ? report.packetsReceived : report.packetsSent;
         const codec = (codecs.get(report.codecId) || "").toLowerCase();
-        if (!MEDIA_KINDS.includes(kind) || /\/(?:rtx|red|ulpfec|flexfec)/.test(codec) || !Number.isFinite(bytes) || !Number.isFinite(packets) || packets <= 0) return;
+        const hasTransferredData = Number.isFinite(packets) ? packets > 0 : bytes > 0;
+        if (!MEDIA_KINDS.includes(kind) || /\/(?:rtx|red|ulpfec|flexfec)/.test(codec) || !Number.isFinite(bytes) || !hasTransferredData) return;
         const streamKey = `${kind}:${report.mid || report.trackIdentifier || report.ssrc || report.id}`;
         if (!seen[direction].has(streamKey)) {
           seen[direction].add(streamKey);
