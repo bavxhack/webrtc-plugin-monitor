@@ -61,7 +61,21 @@ dd small { color: #8490a2; font-size: 10px; font-weight: 600; white-space: nowra
 .device-tab { min-height: 32px; padding: 6px 10px; border-radius: 8px; color: var(--muted); background: transparent; font-size: 11px; }
 .device-tab:hover { color: var(--navy); background: #ffffff99; transform: none; }
 .device-tab[aria-selected="true"] { color: var(--navy); background: var(--surface); box-shadow: 0 2px 7px #14233d12; }
+.device-tab.permission-missing { color: #a41e35; box-shadow: inset 0 -2px #d8455d; }
 .device-tab-panel[hidden] { display: none; }
+.device-permissions { margin-bottom: 9px; padding: 9px; border: 1px solid var(--line); border-radius: 11px; background: #f7faf9; }
+.permission-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.permission-heading > div { min-width: 0; }
+#permission-summary { color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.permission-button { flex: 0 0 auto; min-height: 30px; padding: 5px 8px; border: 1px solid #b9d9d0; border-radius: 8px; color: var(--mint-dark); background: #e8f7f2; font-size: 10px; }
+.permission-button:hover { background: #d8f2e9; }
+.permission-button:disabled { cursor: wait; opacity: .65; transform: none; }
+.device-permissions ul { grid-template-columns: 1fr 1fr; margin-top: 8px; }
+.device-permissions li { display: flex; grid-template-columns: none; align-items: center; justify-content: space-between; gap: 5px; padding: 6px 7px; }
+.device-permissions li strong { color: var(--mint-dark); font-size: 9px; }
+.device-permissions li.permission-missing { border: 1px solid #f0bcc4; background: #fff0f2; }
+.device-permissions li.permission-missing span, .device-permissions li.permission-missing strong { color: #b4233c; }
+.permission-feedback { margin-top: 7px; color: #b4233c; font-size: 9px; }
 .devices ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .devices li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 7px; padding: 7px 8px; border-radius: 9px; background: #f4f8f7; }
 .devices li span { color: var(--mint-dark); font-size: 10px; font-weight: 800; }

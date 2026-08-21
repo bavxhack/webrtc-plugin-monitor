@@ -8,7 +8,7 @@ const source = fs.readFileSync("popup.js", "utf8");
 test("popup prioritizes and displays every connection status", () => {
   const elements = new Map();
   const element = id => {
-    if (!elements.has(id)) elements.set(id, { addEventListener() {}, append() {}, classList: { toggle() {} }, className: "", getAttribute() { return ""; }, replaceChildren() {}, setAttribute() {}, textContent: "" });
+    if (!elements.has(id)) elements.set(id, { addEventListener() {}, append() {}, classList: { toggle() {} }, className: "", getAttribute() { return ""; }, hidden: false, replaceChildren() {}, setAttribute() {}, textContent: "" });
     return elements.get(id);
   };
   let runtimeListener;

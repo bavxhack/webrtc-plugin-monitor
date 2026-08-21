@@ -98,7 +98,8 @@ test("reports available devices and tracks used through getUserMedia", async () 
   const deviceMessages = messages.filter(message => message.type === "DEVICES");
   assert.deepEqual(structuredClone(deviceMessages.at(-1).devices), {
     available: [{ kind: "audioinput", label: "USB microphone" }],
-    used: [{ kind: "audioinput", label: "USB microphone" }]
+    used: [{ kind: "audioinput", label: "USB microphone" }],
+    permissions: { camera: "unsupported", microphone: "unsupported" }
   });
 
   track.readyState = "ended";

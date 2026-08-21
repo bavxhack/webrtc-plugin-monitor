@@ -64,6 +64,17 @@
         <button id="used-devices-tab" class="device-tab" type="button" role="tab" aria-selected="true" aria-controls="used-devices-panel">Verwendet</button>
         <button id="available-devices-tab" class="device-tab" type="button" role="tab" aria-selected="false" aria-controls="available-devices-panel" tabindex="-1">Verfügbar</button>
       </div>
+      <div id="device-permissions" class="device-permissions" aria-live="polite">
+        <div class="permission-heading">
+          <div><p class="eyebrow">Website-Berechtigungen</p><p id="permission-summary">Berechtigungen werden geprüft …</p></div>
+          <button id="request-permissions" class="permission-button" type="button">Berechtigungen anfordern</button>
+        </div>
+        <ul aria-label="Medienberechtigungen">
+          <li id="microphone-permission"><span>Mikrofon</span><strong id="microphone-permission-state">Wird geprüft …</strong></li>
+          <li id="camera-permission"><span>Kamera</span><strong id="camera-permission-state">Wird geprüft …</strong></li>
+        </ul>
+        <p id="permission-feedback" class="permission-feedback" hidden></p>
+      </div>
       <div id="used-devices-panel" class="device-tab-panel" role="tabpanel" aria-labelledby="used-devices-tab">
         <ul id="used-devices"><li class="empty">Keine Geräte verwendet</li></ul>
       </div>

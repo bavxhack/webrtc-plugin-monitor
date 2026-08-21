@@ -27,13 +27,27 @@
     const validList = list => Array.isArray(list) && list.length <= 100 && list.every(device =>
       device && ["audioinput", "audiooutput", "videoinput"].includes(device.kind) &&
       typeof device.label === "string" && device.label.length <= 500);
-    return devices && validList(devices.available) && validList(devices.used);
+    const validPermissions = permissions => permissions && ["camera", "microphone"].every(name =>
+      ["granted", "denied", "prompt", "unsupported"].includes(permissions[name]));
+    return devices && validList(devices.available) && validList(devices.used) && validPermissions(devices.permissions);
   }
   window.addEventListener("message", event => {
     if (event.source !== window || !event.data || event.data.source !== "webrtc-live-monitor" || event.data.version !== 2) return;
     if (event.data.type === "COUNTS" && validCounts(event.data.counts)) send("FRAME_COUNTS", event.data.counts);
     if (event.data.type === "DEVICES" && validDevices(event.data.devices)) send("FRAME_DEVICES", event.data.devices);
     if (event.data.type === "FRAME_GONE") send("FRAME_GONE");
+  });
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (!message || message.namespace !== "webrtc-live-monitor" || message.type !== "REQUEST_DEVICE_PERMISSIONS") return false;
+    const request = async () => {
+      const mediaDevices = window.navigator?.mediaDevices;
+      if (!mediaDevices || typeof mediaDevices.getUserMedia !== "function") throw new Error("Diese Website unterstützt keine Medienfreigabe.");
+      const stream = await mediaDevices.getUserMedia({ audio: true, video: true });
+      for (const track of stream.getTracks()) track.stop();
+      window.postMessage({ source: "webrtc-live-monitor-extension", type: "REFRESH_DEVICES" }, "*");
+    };
+    request().then(() => sendResponse({ ok: true })).catch(error => sendResponse({ ok: false, error: error.message }));
+    return true;
   });
   send("FRAME_READY");
 })();
