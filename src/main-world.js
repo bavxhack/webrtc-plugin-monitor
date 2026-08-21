@@ -10,6 +10,7 @@
   const localDeviceTracks = new Set();
   let updatePending = false;
   let measurementRunning = false;
+  const permissionStatuses = new Map();
 
   async function emit() {
     if (measurementRunning) {
@@ -53,10 +54,30 @@
           kind: track.kind === "audio" ? "audioinput" : "videoinput",
           label: track.label || ""
         }));
-      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used } }, "*");
+      const permissions = await readPermissions();
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used, permissions } }, "*");
     } catch {
       // Device enumeration can be denied by a document's Permissions Policy.
     }
+  }
+
+  async function readPermissions() {
+    const query = window.navigator?.permissions?.query;
+    const read = async name => {
+      if (typeof query !== "function") return "unsupported";
+      try {
+        const status = await Reflect.apply(query, window.navigator.permissions, [{ name }]);
+        if (!permissionStatuses.has(name) && typeof status.addEventListener === "function") {
+          permissionStatuses.set(name, status);
+          status.addEventListener("change", emitDevices);
+        }
+        return status.state;
+      } catch {
+        return "unsupported";
+      }
+    };
+    const [camera, microphone] = await Promise.all([read("camera"), read("microphone")]);
+    return { camera, microphone };
   }
 
   function observeLocalDeviceTrack(track) {
@@ -153,6 +174,9 @@
   }
 
   window.addEventListener("pagehide", () => window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "FRAME_GONE" }, "*"));
+  window.addEventListener("message", event => {
+    if (event.source === window && event.data?.source === "webrtc-live-monitor-extension" && event.data.type === "REFRESH_DEVICES") void emitDevices();
+  });
   setInterval(update, 2500);
   update();
   void emitDevices();

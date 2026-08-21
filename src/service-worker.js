@@ -25,7 +25,15 @@ async function tabCounts(tabId) {
 }
 function normalizeDevices(devices) {
   const normalize = list => Array.isArray(list) ? list.map(({ kind, label }) => ({ kind, label })).slice(0, 100) : [];
-  return { available: normalize(devices?.available), used: normalize(devices?.used) };
+  const normalizePermission = state => ["granted", "denied", "prompt", "unsupported"].includes(state) ? state : "unsupported";
+  return {
+    available: normalize(devices?.available),
+    used: normalize(devices?.used),
+    permissions: {
+      camera: normalizePermission(devices?.permissions?.camera),
+      microphone: normalizePermission(devices?.permissions?.microphone)
+    }
+  };
 }
 async function tabDevices(tabId) {
   const state = await statePromise;
@@ -33,7 +41,8 @@ async function tabDevices(tabId) {
   const unique = list => [...new Map(list.map(device => [`${device.kind}\0${device.label}`, device])).values()];
   return {
     available: unique(frames.flatMap(frame => frame.devices?.available || [])),
-    used: unique(frames.flatMap(frame => frame.devices?.used || []))
+    used: unique(frames.flatMap(frame => frame.devices?.used || [])),
+    permissions: frames.find(frame => frame.devices?.permissions)?.devices.permissions || { camera: "unsupported", microphone: "unsupported" }
   };
 }
 async function publish(tabId) {

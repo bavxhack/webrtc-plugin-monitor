@@ -66,13 +66,37 @@ function renderDevices(devices = { available: [], used: [] }) {
       const kind = document.createElement("span");
       const name = document.createElement("strong");
       kind.textContent = labels[device.kind] || "Gerät";
-      name.textContent = device.label || "Bezeichnung erst nach Freigabe sichtbar";
+      const permission = permissionForDevice(devices.permissions, device.kind);
+      name.textContent = device.label || (permission === "granted" ? "Unbenanntes Gerät" : "Bezeichnung erst nach Freigabe sichtbar");
+      if (permission !== "granted" && permission !== "unsupported") item.className = "permission-missing";
       item.append(kind, name);
       target.append(item);
     }
   };
   renderList("used-devices", devices.used || [], "Keine Geräte verwendet");
   renderList("available-devices", devices.available || [], "Keine Geräte erkannt");
+  renderPermissions(devices.permissions);
+}
+function permissionForDevice(permissions, kind) {
+  if (kind === "videoinput") return permissions?.camera || "unsupported";
+  if (kind === "audioinput") return permissions?.microphone || "unsupported";
+  return "unsupported";
+}
+function renderPermissions(permissions = {}) {
+  const states = { granted: "Erlaubt", denied: "Blockiert", prompt: "Nicht erteilt", unsupported: "Nicht prüfbar" };
+  const mediaPermissions = [
+    ["microphone", permissions.microphone || "unsupported"],
+    ["camera", permissions.camera || "unsupported"]
+  ];
+  const missing = mediaPermissions.filter(([, state]) => state !== "granted" && state !== "unsupported");
+  for (const [name, state] of mediaPermissions) {
+    const item = byId(`${name}-permission`);
+    byId(`${name}-permission-state`).textContent = states[state] || states.unsupported;
+    item.classList.toggle("permission-missing", state !== "granted" && state !== "unsupported");
+  }
+  byId("permission-summary").textContent = missing.length ? "Mindestens eine Medienberechtigung fehlt." : "Alle prüfbaren Medienberechtigungen sind erteilt.";
+  for (const id of ["used-devices-tab", "available-devices-tab"]) byId(id).classList.toggle("permission-missing", missing.length > 0);
+  byId("request-permissions").hidden = missing.length === 0;
 }
 function connectionStatus(c) {
   if (c.connectionStates.connected > 0) return { text: "WebRTC verbunden", className: "connected" };
@@ -111,6 +135,23 @@ byId("demo").addEventListener("click", async () => {
 });
 byId("reset").addEventListener("click", async () => {
   if (Number.isInteger(activeTabId)) await chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "RESET_TAB", tabId: activeTabId });
+});
+byId("request-permissions").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  const feedback = byId("permission-feedback");
+  button.disabled = true;
+  feedback.hidden = true;
+  try {
+    const response = await chrome.tabs.sendMessage(activeTabId, { namespace: "webrtc-live-monitor", type: "REQUEST_DEVICE_PERMISSIONS" }, { frameId: 0 });
+    if (!response?.ok) throw new Error(response?.error || "Die Berechtigung wurde nicht erteilt.");
+    feedback.textContent = "Berechtigungen wurden aktualisiert.";
+    feedback.hidden = false;
+  } catch (error) {
+    feedback.textContent = `${error.message} Prüfe gegebenenfalls die Website-Einstellungen im Browser.`;
+    feedback.hidden = false;
+  } finally {
+    button.disabled = false;
+  }
 });
 refresh().catch(error => {
   byId("status").textContent = "Monitor konnte nicht geladen werden";

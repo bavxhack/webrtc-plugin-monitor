@@ -10,7 +10,7 @@ function runBridge(sendMessage) {
   const window = {
     addEventListener(type, listener) { listeners.set(type, listener); }
   };
-  const context = { window, chrome: { runtime: { sendMessage } } };
+  const context = { window, chrome: { runtime: { onMessage: { addListener(listener) { listeners.set("runtimeMessage", listener); } }, sendMessage } } };
   vm.runInNewContext(bridgeSource, context, { filename: "src/content-bridge.js" });
   return { window, listeners };
 }
@@ -68,9 +68,25 @@ test("valid device inventories are forwarded and malformed entries are rejected"
     data: { source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices }
   });
 
-  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }] });
-  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [] });
+  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }], permissions: { camera: "granted", microphone: "prompt" } });
+  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [], permissions: { camera: "granted", microphone: "prompt" } });
 
   assert.deepEqual(messages.map(message => message.type), ["FRAME_READY", "FRAME_DEVICES"]);
   assert.deepEqual(messages[1].devices.used, [{ kind: "videoinput", label: "USB camera" }]);
+});
+
+test("permission requests acquire and immediately release website media", async () => {
+  let stopped = 0;
+  const { listeners, window } = runBridge(() => Promise.resolve());
+  window.navigator = { mediaDevices: { getUserMedia: async constraints => {
+    assert.equal(constraints.audio, true);
+    assert.equal(constraints.video, true);
+    return { getTracks: () => [{ stop() { stopped += 1; } }, { stop() { stopped += 1; } }] };
+  } } };
+  window.postMessage = message => { assert.equal(message.type, "REFRESH_DEVICES"); };
+  const response = await new Promise(resolve => {
+    assert.equal(listeners.get("runtimeMessage")({ namespace: "webrtc-live-monitor", type: "REQUEST_DEVICE_PERMISSIONS" }, {}, resolve), true);
+  });
+  assert.equal(response.ok, true);
+  assert.equal(stopped, 2);
 });
