@@ -25,7 +25,12 @@ async function tabCounts(tabId) {
 }
 function normalizeDevices(devices) {
   const normalize = list => Array.isArray(list) ? list.map(({ kind, label }) => ({ kind, label })).slice(0, 100) : [];
-  return { available: normalize(devices?.available), used: normalize(devices?.used) };
+  const state = value => ["granted", "prompt", "denied", "unknown"].includes(value) ? value : "unknown";
+  return {
+    available: normalize(devices?.available),
+    used: normalize(devices?.used),
+    permissions: { camera: state(devices?.permissions?.camera), microphone: state(devices?.permissions?.microphone) }
+  };
 }
 async function tabDevices(tabId) {
   const state = await statePromise;
@@ -33,7 +38,14 @@ async function tabDevices(tabId) {
   const unique = list => [...new Map(list.map(device => [`${device.kind}\0${device.label}`, device])).values()];
   return {
     available: unique(frames.flatMap(frame => frame.devices?.available || [])),
-    used: unique(frames.flatMap(frame => frame.devices?.used || []))
+    used: unique(frames.flatMap(frame => frame.devices?.used || [])),
+    permissions: frames.reduce((result, frame) => {
+      for (const kind of ["camera", "microphone"]) {
+        const current = frame.devices?.permissions?.[kind];
+        if (current === "granted" || result[kind] === "unknown") result[kind] = current || result[kind];
+      }
+      return result;
+    }, { camera: "unknown", microphone: "unknown" })
   };
 }
 async function publish(tabId) {
@@ -67,6 +79,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ ok: false });
         });
     }
+    return true;
+  }
+  if (message.type === "REQUEST_MEDIA_PERMISSION") {
+    if (sender.tab || !Number.isInteger(message.tabId) || !["camera", "microphone"].includes(message.kind)) return false;
+    chrome.tabs.sendMessage(message.tabId, message, { frameId: 0 })
+      .then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
     return true;
   }
   if (!sender.tab || !Number.isInteger(sender.tab.id)) return false;

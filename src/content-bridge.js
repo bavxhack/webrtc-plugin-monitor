@@ -27,13 +27,21 @@
     const validList = list => Array.isArray(list) && list.length <= 100 && list.every(device =>
       device && ["audioinput", "audiooutput", "videoinput"].includes(device.kind) &&
       typeof device.label === "string" && device.label.length <= 500);
-    return devices && validList(devices.available) && validList(devices.used);
+    const validState = state => ["granted", "prompt", "denied", "unknown"].includes(state);
+    return devices && validList(devices.available) && validList(devices.used) && devices.permissions &&
+      validState(devices.permissions.camera) && validState(devices.permissions.microphone);
   }
   window.addEventListener("message", event => {
     if (event.source !== window || !event.data || event.data.source !== "webrtc-live-monitor" || event.data.version !== 2) return;
     if (event.data.type === "COUNTS" && validCounts(event.data.counts)) send("FRAME_COUNTS", event.data.counts);
     if (event.data.type === "DEVICES" && validDevices(event.data.devices)) send("FRAME_DEVICES", event.data.devices);
     if (event.data.type === "FRAME_GONE") send("FRAME_GONE");
+  });
+  chrome.runtime.onMessage?.addListener(message => {
+    if (message?.namespace !== "webrtc-live-monitor" || message.type !== "REQUEST_MEDIA_PERMISSION") return;
+    if (message.kind === "camera" || message.kind === "microphone") {
+      window.postMessage({ source: "webrtc-live-monitor-extension", type: "REQUEST_MEDIA_PERMISSION", kind: message.kind }, "*");
+    }
   });
   send("FRAME_READY");
 })();

@@ -68,6 +68,16 @@
         <ul id="used-devices"><li class="empty">Keine Geräte verwendet</li></ul>
       </div>
       <div id="available-devices-panel" class="device-tab-panel" role="tabpanel" aria-labelledby="available-devices-tab" hidden>
+        <div class="permission-list" aria-label="Medienberechtigungen">
+          <div id="camera-permission" class="permission-card missing">
+            <div><strong>Kamera</strong><span id="camera-permission-status">Keine Berechtigung</span></div>
+            <button class="permission-button" type="button" data-permission="camera">Berechtigung anfordern</button>
+          </div>
+          <div id="microphone-permission" class="permission-card missing">
+            <div><strong>Mikrofon</strong><span id="microphone-permission-status">Keine Berechtigung</span></div>
+            <button class="permission-button" type="button" data-permission="microphone">Berechtigung anfordern</button>
+          </div>
+        </div>
         <ul id="available-devices"><li class="empty">Keine Geräte erkannt</li></ul>
       </div>
       <p class="device-note">Der Browser zeigt den Anschlusstyp nicht an. USB-Geräte sind deshalb zusammen mit allen verfügbaren Audio- und Videogeräten aufgeführt.</p>

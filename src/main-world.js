@@ -53,10 +53,36 @@
           kind: track.kind === "audio" ? "audioinput" : "videoinput",
           label: track.label || ""
         }));
-      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used } }, "*");
+      const permissions = await getMediaPermissions();
+      window.postMessage({ source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices: { available, used, permissions } }, "*");
     } catch {
       // Device enumeration can be denied by a document's Permissions Policy.
     }
+  }
+
+  async function getMediaPermissions() {
+    const query = window.navigator?.permissions?.query;
+    const getState = async name => {
+      if (typeof query !== "function") return "unknown";
+      try {
+        return (await Reflect.apply(query, window.navigator.permissions, [{ name }])).state;
+      } catch {
+        return "unknown";
+      }
+    };
+    const [camera, microphone] = await Promise.all([getState("camera"), getState("microphone")]);
+    return { camera, microphone };
+  }
+
+  async function requestMediaPermission(kind) {
+    if (typeof mediaDevices?.getUserMedia !== "function") return;
+    try {
+      const stream = await mediaDevices.getUserMedia({ [kind === "camera" ? "video" : "audio"]: true });
+      for (const track of stream.getTracks()) track.stop();
+    } catch {
+      // The refreshed permission state communicates denial to the popup.
+    }
+    await emitDevices();
   }
 
   function observeLocalDeviceTrack(track) {
@@ -129,6 +155,11 @@
   if (mediaDevices && typeof mediaDevices.addEventListener === "function") {
     mediaDevices.addEventListener("devicechange", emitDevices);
   }
+  window.addEventListener("message", event => {
+    const data = event.data;
+    if (event.source !== window || data?.source !== "webrtc-live-monitor-extension" || data.type !== "REQUEST_MEDIA_PERMISSION") return;
+    if (data.kind === "camera" || data.kind === "microphone") void requestMediaPermission(data.kind);
+  });
   const nativeGetDisplayMedia = mediaDevices?.getDisplayMedia;
   if (typeof nativeGetDisplayMedia === "function") {
     Object.defineProperty(mediaDevices, "getDisplayMedia", {

@@ -23,7 +23,7 @@ test("popup prioritizes and displays every connection status", () => {
   vm.runInNewContext(source, {
     chrome,
     Date,
-    document: { createElement: () => ({ append() {}, className: "", textContent: "" }), getElementById: element },
+    document: { createElement: () => ({ append() {}, className: "", textContent: "" }), getElementById: element, querySelectorAll: () => [] },
     Intl,
     location: { search: "" },
     URLSearchParams,
@@ -77,7 +77,7 @@ test("device tabs switch their associated panels with mouse and keyboard", () =>
   };
   vm.runInNewContext(source, {
     chrome,
-    document: { createElement: () => createElement(), getElementById: element },
+    document: { createElement: () => createElement(), getElementById: element, querySelectorAll: () => [] },
     Intl,
     location: { search: "" },
     URLSearchParams,

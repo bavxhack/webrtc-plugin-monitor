@@ -98,11 +98,38 @@ test("reports available devices and tracks used through getUserMedia", async () 
   const deviceMessages = messages.filter(message => message.type === "DEVICES");
   assert.deepEqual(structuredClone(deviceMessages.at(-1).devices), {
     available: [{ kind: "audioinput", label: "USB microphone" }],
-    used: [{ kind: "audioinput", label: "USB microphone" }]
+    used: [{ kind: "audioinput", label: "USB microphone" }],
+    permissions: { camera: "unknown", microphone: "unknown" }
   });
 
   track.readyState = "ended";
   trackListeners.get("ended")();
   await nextTurn();
   assert.deepEqual(structuredClone(messages.filter(message => message.type === "DEVICES").at(-1).devices.used), []);
+});
+
+test("reports permission states and requests media access from an extension message", async () => {
+  const listeners = new Map();
+  const requests = [];
+  const messages = [];
+  const track = { kind: "video", label: "Camera", readyState: "live", addEventListener() {}, stop() { this.readyState = "ended"; } };
+  const mediaDevices = {
+    addEventListener() {},
+    async enumerateDevices() { return [{ kind: "videoinput", label: "Camera" }]; },
+    async getUserMedia(constraints) { requests.push(constraints); return { getTracks: () => [track] }; }
+  };
+  const window = {
+    navigator: { mediaDevices, permissions: { async query({ name }) { return { state: name === "camera" ? "granted" : "denied" }; } } },
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    postMessage(message) { messages.push(message); }
+  };
+  vm.runInNewContext(source, { Promise, Reflect, Set, WeakMap, WeakSet, WebRTCMonitorRtpStats: { async countPeerConnections() { return { peers: 0 }; } }, queueMicrotask, setInterval() {}, window }, { filename: "src/main-world.js" });
+  await nextTurn();
+
+  listeners.get("message")({ source: window, data: { source: "webrtc-live-monitor-extension", type: "REQUEST_MEDIA_PERMISSION", kind: "camera" } });
+  await nextTurn();
+
+  assert.deepEqual(structuredClone(requests), [{ video: true }]);
+  assert.equal(track.readyState, "ended");
+  assert.deepEqual(structuredClone(messages.filter(message => message.type === "DEVICES").at(-1).devices.permissions), { camera: "granted", microphone: "denied" });
 });

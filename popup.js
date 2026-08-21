@@ -49,7 +49,7 @@ function render(c) {
   byId("pulse").className = status.className;
   byId("updated").textContent = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date());
 }
-function renderDevices(devices = { available: [], used: [] }) {
+function renderDevices(devices = { available: [], used: [], permissions: {} }) {
   const labels = { audioinput: "Mikrofon", audiooutput: "Lautsprecher", videoinput: "Kamera" };
   const renderList = (id, list, emptyText) => {
     const target = byId(id);
@@ -73,6 +73,16 @@ function renderDevices(devices = { available: [], used: [] }) {
   };
   renderList("used-devices", devices.used || [], "Keine Geräte verwendet");
   renderList("available-devices", devices.available || [], "Keine Geräte erkannt");
+  const statusLabels = { granted: "Berechtigung erteilt", denied: "Berechtigung abgelehnt", prompt: "Noch nicht erlaubt", unknown: "Berechtigung nicht verfügbar" };
+  for (const kind of ["camera", "microphone"]) {
+    const state = devices.permissions?.[kind] || "unknown";
+    byId(`${kind}-permission`).classList.toggle("missing", state !== "granted");
+    byId(`${kind}-permission-status`).textContent = statusLabels[state] || statusLabels.unknown;
+  }
+  byId("available-devices-tab").classList.toggle(
+    "permissions-missing",
+    ["camera", "microphone"].some(kind => devices.permissions?.[kind] !== "granted")
+  );
 }
 function connectionStatus(c) {
   if (c.connectionStates.connected > 0) return { text: "WebRTC verbunden", className: "connected" };
@@ -112,6 +122,19 @@ byId("demo").addEventListener("click", async () => {
 byId("reset").addEventListener("click", async () => {
   if (Number.isInteger(activeTabId)) await chrome.runtime.sendMessage({ namespace: "webrtc-live-monitor", type: "RESET_TAB", tabId: activeTabId });
 });
+for (const button of document.querySelectorAll("[data-permission]")) {
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    button.textContent = "Anfrage gesendet …";
+    await chrome.runtime.sendMessage({
+      namespace: "webrtc-live-monitor",
+      type: "REQUEST_MEDIA_PERMISSION",
+      tabId: activeTabId,
+      kind: button.dataset.permission
+    });
+    window.close();
+  });
+}
 refresh().catch(error => {
   byId("status").textContent = "Monitor konnte nicht geladen werden";
   byId("help").textContent = error.message;

@@ -61,7 +61,19 @@ dd small { color: #8490a2; font-size: 10px; font-weight: 600; white-space: nowra
 .device-tab { min-height: 32px; padding: 6px 10px; border-radius: 8px; color: var(--muted); background: transparent; font-size: 11px; }
 .device-tab:hover { color: var(--navy); background: #ffffff99; transform: none; }
 .device-tab[aria-selected="true"] { color: var(--navy); background: var(--surface); box-shadow: 0 2px 7px #14233d12; }
+.device-tab.permissions-missing { color: #b52d42; }
+.device-tab.permissions-missing[aria-selected="true"] { background: #fff1f3; box-shadow: inset 0 0 0 1px #f0b7bf; }
 .device-tab-panel[hidden] { display: none; }
+.permission-list { display: grid; gap: 6px; margin-bottom: 9px; }
+.permission-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px; border: 1px solid #b9e9d8; border-radius: 9px; background: #effaf6; }
+.permission-card.missing { border-color: #f0b7bf; background: #fff1f3; }
+.permission-card > div { display: grid; min-width: 0; }
+.permission-card strong { font-size: 11px; }
+.permission-card span { color: var(--mint-dark); font-size: 9px; font-weight: 700; }
+.permission-card.missing span { color: #b52d42; }
+.permission-button { min-height: 29px; padding: 5px 8px; color: #fff; background: #b52d42; font-size: 9px; }
+.permission-button:hover { background: #982337; }
+.permission-card:not(.missing) .permission-button { display: none; }
 .devices ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .devices li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 7px; padding: 7px 8px; border-radius: 9px; background: #f4f8f7; }
 .devices li span { color: var(--mint-dark); font-size: 10px; font-weight: 800; }

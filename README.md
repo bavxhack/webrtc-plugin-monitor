@@ -41,6 +41,8 @@ Die Zähler messen bewusst **MediaStreamTracks und nicht RTP-Streams/SSRCs**. Si
 
 Die Geräteliste stammt aus `navigator.mediaDevices.enumerateDevices()`. Chrome gibt über diese Schnittstelle Mikrofone, Lautsprecher und Kameras aus, aber nicht, ob sie intern, per USB oder anders angeschlossen sind. Deshalb zeigt das Popup sämtliche verfügbaren Mediengeräte; ein USB-Gerät ist anhand seiner vom Browser gelieferten Bezeichnung erkennbar. Gerätebezeichnungen können bis zur Medienfreigabe anonym bleiben. Als „in diesem Tab verwendet“ gelten aktive Tracks, die der Tab über `getUserMedia()` erhalten hat. Bildschirmfreigaben gehören nicht zur Liste physischer Geräte.
 
+Im Tab **Verfügbar** wird außerdem der Berechtigungsstatus der aktuell betrachteten Webseite für Kamera und Mikrofon angezeigt. Fehlende, abgelehnte oder vom Browser nicht abfragbare Freigaben sind rot markiert. Über **Berechtigung anfordern** wird gezielt `getUserMedia()` in der Webseite aufgerufen; der dabei nur zur Berechtigungsabfrage erzeugte Stream wird unmittelbar wieder beendet und weder aufgezeichnet noch übertragen. Die Entscheidung trifft weiterhin ausschließlich Chrome und die Webseite muss die Medienfreigabe gemäß ihrer Permissions Policy zulassen.
+
 `<all_urls>` ist als Host-Zugriff erforderlich, damit die Instrumentierung bei `document_start` auf beliebigen WebRTC-Webseiten und in deren Frames aktiv sein kann. `storage`, `tabs` und `webNavigation` dienen ausschließlich Session-Zustand, aktivem Tab und zuverlässiger Navigationsbereinigung. Es gibt keinen Build-Schritt und keine Laufzeitabhängigkeiten.
 
 ## Datenschutz und Sicherheit

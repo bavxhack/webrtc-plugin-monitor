@@ -10,9 +10,10 @@ function runBridge(sendMessage) {
   const window = {
     addEventListener(type, listener) { listeners.set(type, listener); }
   };
-  const context = { window, chrome: { runtime: { sendMessage } } };
+  let runtimeListener;
+  const context = { window, chrome: { runtime: { sendMessage, onMessage: { addListener(listener) { runtimeListener = listener; } } } } };
   vm.runInNewContext(bridgeSource, context, { filename: "src/content-bridge.js" });
-  return { window, listeners };
+  return { window, listeners, runtimeListener };
 }
 
 test("a synchronously invalidated extension context does not escape", () => {
@@ -68,9 +69,18 @@ test("valid device inventories are forwarded and malformed entries are rejected"
     data: { source: "webrtc-live-monitor", version: 2, type: "DEVICES", devices }
   });
 
-  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }] });
-  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [] });
+  postDevices({ available: [{ kind: "audioinput", label: "USB microphone" }], used: [{ kind: "videoinput", label: "USB camera" }], permissions: { camera: "granted", microphone: "prompt" } });
+  postDevices({ available: [{ kind: "usb", label: "untrusted" }], used: [], permissions: { camera: "granted", microphone: "granted" } });
 
   assert.deepEqual(messages.map(message => message.type), ["FRAME_READY", "FRAME_DEVICES"]);
   assert.deepEqual(messages[1].devices.used, [{ kind: "videoinput", label: "USB camera" }]);
+});
+
+test("permission requests are passed into the page only for supported media kinds", () => {
+  const posted = [];
+  const { window, runtimeListener } = runBridge(() => Promise.resolve());
+  window.postMessage = message => posted.push(message);
+  runtimeListener({ namespace: "webrtc-live-monitor", type: "REQUEST_MEDIA_PERMISSION", kind: "camera" });
+  runtimeListener({ namespace: "webrtc-live-monitor", type: "REQUEST_MEDIA_PERMISSION", kind: "screen" });
+  assert.deepEqual(structuredClone(posted), [{ source: "webrtc-live-monitor-extension", type: "REQUEST_MEDIA_PERMISSION", kind: "camera" }]);
 });
